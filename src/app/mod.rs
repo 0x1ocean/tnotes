@@ -64,6 +64,15 @@ pub enum Pane {
     Editor,
 }
 
+/// Which layer receives input, top-most first. Both `on_key` and `on_mouse` dispatch on it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Layer {
+    Overlay,
+    Settings,
+    TagPopup,
+    Main,
+}
+
 pub struct Tab {
     pub path: PathBuf,
     pub editor: EditorState,
@@ -316,6 +325,18 @@ impl App {
         };
         app.refresh();
         app
+    }
+
+    pub fn layer(&self) -> Layer {
+        if self.overlay != Overlay::None {
+            Layer::Overlay
+        } else if self.settings.is_some() {
+            Layer::Settings
+        } else if self.tag_popup.is_some() && self.focus == Pane::Editor {
+            Layer::TagPopup
+        } else {
+            Layer::Main
+        }
     }
 
     pub fn run(&mut self, term: &mut DefaultTerminal) -> Result<()> {

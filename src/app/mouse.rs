@@ -28,77 +28,16 @@ impl App {
     pub(super) fn on_mouse(&mut self, m: MouseEvent) {
         let pos = Position::new(m.column, m.row);
         let down = matches!(m.kind, MouseEventKind::Down(MouseButton::Left));
-        match self.overlay.clone() {
-            Overlay::Confirm(action) => {
+        match self.layer() {
+            Layer::Overlay => return self.overlay_mouse(m, pos, down),
+            Layer::Settings => {
                 if down {
-                    // Row 0 is `yes`, row 1 is `no`; anything else cancels.
-                    let hit = self.hits.overlay_rows.iter().position(|r| r.contains(pos));
-                    self.overlay = Overlay::None;
-                    if hit == Some(0) {
-                        self.run_confirm(action);
-                    }
+                    self.settings_click(pos);
                 }
                 return;
             }
-            Overlay::Prompt(_) => {
-                if down && !self.hits.overlay.contains(pos) {
-                    self.overlay = Overlay::None;
-                }
-                return;
-            }
-            Overlay::Picker(note) => {
-                if !down {
-                    return;
-                }
-                if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
-                    if self.picker_sel == i {
-                        self.submit_picker(note);
-                    } else {
-                        self.picker_sel = i;
-                    }
-                } else if !self.hits.overlay.contains(pos) {
-                    self.overlay = Overlay::None;
-                }
-                return;
-            }
-            Overlay::Menu(menu) => {
-                match m.kind {
-                    MouseEventKind::Down(MouseButton::Left) => {
-                        if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos))
-                        {
-                            self.run_menu(menu.items[i].action.clone());
-                        } else {
-                            self.overlay = Overlay::None;
-                        }
-                    }
-                    MouseEventKind::Down(MouseButton::Right) => {
-                        self.overlay = Overlay::None;
-                        self.open_menu(pos);
-                    }
-                    MouseEventKind::Moved => {
-                        if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos))
-                        {
-                            let mut menu = menu;
-                            menu.sel = i;
-                            self.overlay = Overlay::Menu(menu);
-                        }
-                    }
-                    _ => {}
-                }
-                return;
-            }
-            Overlay::Browse => {
-                self.browser_mouse(m, pos);
-                return;
-            }
-            Overlay::None => {}
-        }
-
-        if self.settings.is_some() {
-            if down {
-                self.settings_click(pos);
-            }
-            return;
+            // Popup rows are hit-tested as `Target::PopupRow` in the main path.
+            Layer::TagPopup | Layer::Main => {}
         }
 
         if matches!(m.kind, MouseEventKind::Down(MouseButton::Right)) {
@@ -204,6 +143,63 @@ impl App {
                 }
             }
             _ => {}
+        }
+    }
+
+    fn overlay_mouse(&mut self, m: MouseEvent, pos: Position, down: bool) {
+        match self.overlay.clone() {
+            Overlay::Confirm(action) => {
+                if down {
+                    // Row 0 is `yes`, row 1 is `no`; anything else cancels.
+                    let hit = self.hits.overlay_rows.iter().position(|r| r.contains(pos));
+                    self.overlay = Overlay::None;
+                    if hit == Some(0) {
+                        self.run_confirm(action);
+                    }
+                }
+            }
+            Overlay::Prompt(_) => {
+                if down && !self.hits.overlay.contains(pos) {
+                    self.overlay = Overlay::None;
+                }
+            }
+            Overlay::Picker(note) => {
+                if !down {
+                    return;
+                }
+                if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                    if self.picker_sel == i {
+                        self.submit_picker(note);
+                    } else {
+                        self.picker_sel = i;
+                    }
+                } else if !self.hits.overlay.contains(pos) {
+                    self.overlay = Overlay::None;
+                }
+            }
+            Overlay::Menu(menu) => match m.kind {
+                MouseEventKind::Down(MouseButton::Left) => {
+                    if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                        self.run_menu(menu.items[i].action.clone());
+                    } else {
+                        self.overlay = Overlay::None;
+                    }
+                }
+                MouseEventKind::Down(MouseButton::Right) => {
+                    self.overlay = Overlay::None;
+                    self.open_menu(pos);
+                }
+                MouseEventKind::Moved => {
+                    if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                        let mut menu = menu;
+                        menu.sel = i;
+                        self.overlay = Overlay::Menu(menu);
+                    }
+                }
+                _ => {}
+            },
+            Overlay::Browse => self.browser_mouse(m, pos),
+            Overlay::None => {}
         }
     }
 

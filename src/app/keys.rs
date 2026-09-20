@@ -1,4 +1,4 @@
-//! Keyboard routing: overlays → tag popup → global chords → focused pane.
+//! Keyboard routing by `App::layer`: overlay → settings → tag popup → global chords → pane.
 
 use super::*;
 
@@ -36,6 +36,19 @@ impl App {
     }
 
     pub(super) fn on_key(&mut self, k: KeyEvent) {
+        match self.layer() {
+            Layer::Overlay => self.overlay_key(k),
+            Layer::Settings => self.settings_key(k),
+            Layer::TagPopup => {
+                if !self.tag_popup_key(k) {
+                    self.main_key(k);
+                }
+            }
+            Layer::Main => self.main_key(k),
+        }
+    }
+
+    fn overlay_key(&mut self, k: KeyEvent) {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
         match self.overlay.clone() {
             Overlay::Confirm(action) => {
@@ -43,7 +56,6 @@ impl App {
                 if k.code == KeyCode::Char('y') {
                     self.run_confirm(action);
                 }
-                return;
             }
             Overlay::Prompt(kind) => {
                 match k.code {
@@ -62,76 +74,64 @@ impl App {
                         self.prompt_candidates.clear();
                     }
                 }
-                return;
             }
-            Overlay::Picker(note) => {
-                match (k.code, ctrl) {
-                    (KeyCode::Esc, _) => self.overlay = Overlay::None,
-                    (KeyCode::Enter, _) => self.submit_picker(note),
-                    (KeyCode::Down, _)
-                    | (KeyCode::Char('j'), true)
-                    | (KeyCode::Char('n'), true) => {
-                        self.picker_sel =
-                            (self.picker_sel + 1).min(self.picker_rows.len().saturating_sub(1));
-                    }
-                    (KeyCode::Up, _) | (KeyCode::Char('k'), true) | (KeyCode::Char('p'), true) => {
-                        self.picker_sel = self.picker_sel.saturating_sub(1);
-                    }
-                    _ => {
-                        self.query_handler
-                            .on_event(Event::Key(k), &mut self.picker_query);
-                        self.refilter_picker();
-                    }
+            Overlay::Picker(note) => match (k.code, ctrl) {
+                (KeyCode::Esc, _) => self.overlay = Overlay::None,
+                (KeyCode::Enter, _) => self.submit_picker(note),
+                (KeyCode::Down, _) | (KeyCode::Char('j'), true) | (KeyCode::Char('n'), true) => {
+                    self.picker_sel =
+                        (self.picker_sel + 1).min(self.picker_rows.len().saturating_sub(1));
                 }
-                return;
-            }
-            Overlay::Menu(menu) => {
-                self.menu_key(k, menu);
-                return;
-            }
-            Overlay::Browse => {
-                self.browser_key(k);
-                return;
-            }
+                (KeyCode::Up, _) | (KeyCode::Char('k'), true) | (KeyCode::Char('p'), true) => {
+                    self.picker_sel = self.picker_sel.saturating_sub(1);
+                }
+                _ => {
+                    self.query_handler
+                        .on_event(Event::Key(k), &mut self.picker_query);
+                    self.refilter_picker();
+                }
+            },
+            Overlay::Menu(menu) => self.menu_key(k, menu),
+            Overlay::Browse => self.browser_key(k),
             Overlay::None => {}
         }
+    }
 
-        if self.settings.is_some() {
-            self.settings_key(k);
-            return;
-        }
-
-        if self.tag_popup.is_some() && self.focus == Pane::Editor {
-            let n = self
-                .tag_popup
-                .as_ref()
-                .map(|p| p.candidates.len())
-                .unwrap_or(0);
-            match (k.code, ctrl) {
-                (KeyCode::Esc, _) => {
-                    self.tag_popup = None;
-                    return;
-                }
-                (KeyCode::Down, _) | (KeyCode::Char('n'), true) => {
-                    if let Some(p) = &mut self.tag_popup {
-                        p.sel = (p.sel + 1) % n;
-                    }
-                    return;
-                }
-                (KeyCode::Up, _) | (KeyCode::Char('p'), true) => {
-                    if let Some(p) = &mut self.tag_popup {
-                        p.sel = (p.sel + n - 1) % n;
-                    }
-                    return;
-                }
-                (KeyCode::Tab, _) | (KeyCode::Enter, _) => {
-                    self.accept_tag(None);
-                    return;
-                }
-                _ => {}
+    /// Tag-completion popup keys; `true` when the key was consumed.
+    fn tag_popup_key(&mut self, k: KeyEvent) -> bool {
+        let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
+        let n = self
+            .tag_popup
+            .as_ref()
+            .map(|p| p.candidates.len())
+            .unwrap_or(0);
+        match (k.code, ctrl) {
+            (KeyCode::Esc, _) => {
+                self.tag_popup = None;
+                true
             }
+            (KeyCode::Down, _) | (KeyCode::Char('n'), true) => {
+                if let Some(p) = &mut self.tag_popup {
+                    p.sel = (p.sel + 1) % n;
+                }
+                true
+            }
+            (KeyCode::Up, _) | (KeyCode::Char('p'), true) => {
+                if let Some(p) = &mut self.tag_popup {
+                    p.sel = (p.sel + n - 1) % n;
+                }
+                true
+            }
+            (KeyCode::Tab, _) | (KeyCode::Enter, _) => {
+                self.accept_tag(None);
+                true
+            }
+            _ => false,
         }
+    }
 
+    /// Global chords, then the focused pane.
+    fn main_key(&mut self, k: KeyEvent) {
         let in_editor = self.focus == Pane::Editor;
         if in_editor
             && matches!(k.code, KeyCode::Tab | KeyCode::BackTab)
