@@ -291,6 +291,12 @@ fn link_popup_completes_titles() {
     assert_eq!(line(app, 1), "[[Weekly plan]]");
     assert!(app.popup.is_none());
     assert_eq!(app.tabs[0].editor.cursor, Index2::new(1, 15));
+    // Moving back into the finished link must not reopen the popup.
+    for _ in 0..10 {
+        app.on_key(key(KeyCode::Left));
+    }
+    assert_eq!(app.tabs[0].editor.cursor, Index2::new(1, 5));
+    assert!(app.popup.is_none());
 }
 
 #[test]

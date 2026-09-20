@@ -179,7 +179,8 @@ pub(super) fn draw_backlinks(
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_default()
         });
-    let rect = centered(area, 60, 14);
+    let h = (app.backlink_rows.len() as u16 + 2).clamp(3, 14);
+    let rect = centered(area, 60, h);
     f.render_widget(Clear, rect);
     let block = overlay_block(
         format!(" ↩ links to \"{}\" ", truncate(&title, 40)),

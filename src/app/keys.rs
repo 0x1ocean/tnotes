@@ -109,10 +109,14 @@ impl App {
         }
     }
 
-    /// Tag-completion popup keys; `true` when the key was consumed.
+    /// Completion popup keys; `true` when the key was consumed.
     fn popup_key(&mut self, k: KeyEvent) -> bool {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
         let n = self.popup.as_ref().map(|p| p.candidates.len()).unwrap_or(0);
+        if matches!(k.code, KeyCode::Tab | KeyCode::Enter) && !k.modifiers.is_empty() {
+            // `alt+enter` and friends belong to the editor, not the popup.
+            return false;
+        }
         match (k.code, ctrl) {
             (KeyCode::Esc, _) => {
                 self.popup = None;

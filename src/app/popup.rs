@@ -13,10 +13,15 @@ impl App {
         let Some(row) = tab.editor.lines.get(RowIndex::new(cursor.row)) else {
             return;
         };
-        let before: &[char] = &row[..cursor.col.min(row.len())];
-        self.popup = self
-            .tag_candidates(before)
-            .or_else(|| self.link_candidates(before, &tab.path));
+        let col = cursor.col.min(row.len());
+        let before: &[char] = &row[..col];
+        self.popup = self.tag_candidates(before).or_else(|| {
+            // Inside an already closed `[[…]]` there is nothing to complete.
+            if markdown::link_at(row, col).is_some() {
+                return None;
+            }
+            self.link_candidates(before, &tab.path)
+        });
     }
 
     /// `#pre` before the cursor → tag paths starting with `pre`.
