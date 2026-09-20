@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -5,7 +6,7 @@ use std::time::SystemTime;
 
 use anyhow::{Context, Result, bail};
 
-use crate::note::{Note, slug_of, title_of};
+use crate::note::{self, Note, link_key, slug_of, title_of};
 
 pub const TRASH_DIR: &str = ".Trash";
 
@@ -311,7 +312,7 @@ impl Store {
     /// Create a templated note in `dir` (must be inside a root), insert at index 0.
     pub fn create(&mut self, dir: &Path, template: &str) -> Result<usize> {
         let root = self.root_of(dir).context("folder is not inside a root")?;
-        let target = free_path(dir, "untitled", None);
+        let target = free_path(dir, &slug_of(&title_of(template)), None);
         write_atomic(&target, template)?;
         self.notes.insert(0, load_note(root, &target)?);
         Ok(0)
@@ -327,6 +328,71 @@ impl Store {
         self.notes.retain(|n| n.path != path);
         self.notes.insert(0, load_note(root, path)?);
         Ok(0)
+    }
+
+    /// `root-name/rel/stem` — the CLI identifier of a note (`.md` dropped).
+    pub fn note_id(&self, note: &Note) -> String {
+        let root = &self.roots[note.root];
+        let rel = note.path.strip_prefix(&root.dir).unwrap_or(&note.path);
+        format!("{}/{}", root.name, rel.with_extension("").display())
+    }
+
+    /// Note index a `[[target]]` points to: title match (case-insensitive, trimmed) wins,
+    /// else a file stem equal to `slug_of(target)`. Most recently modified first (`notes` order).
+    pub fn resolve_link(&self, target: &str) -> Option<usize> {
+        let key = link_key(target);
+        if let Some(i) = self.notes.iter().position(|n| link_key(&n.title) == key) {
+            return Some(i);
+        }
+        let stem = slug_of(target);
+        self.notes.iter().position(|n| stem_of(&n.path) == stem)
+    }
+
+    /// Indices of notes (other than `idx`) containing a link that resolves to `idx`, in `notes` order.
+    pub fn backlinks(&self, idx: usize) -> Vec<usize> {
+        let mut cache: HashMap<String, Option<usize>> = HashMap::new();
+        self.notes
+            .iter()
+            .enumerate()
+            .filter(|(i, n)| {
+                *i != idx
+                    && n.links.iter().any(|l| {
+                        *cache
+                            .entry(link_key(l))
+                            .or_insert_with(|| self.resolve_link(l))
+                            == Some(idx)
+                    })
+            })
+            .map(|(i, _)| i)
+            .collect()
+    }
+
+    /// Rewrite `[[old_title]]` → `[[new_title]]` on disk in every note not in `skip`.
+    /// Returns the paths that were rewritten. Stops at the first write error (earlier files
+    /// stay rewritten). No-op when `link_key(old) == link_key(new)`.
+    pub fn relink(
+        &mut self,
+        old_title: &str,
+        new_title: &str,
+        skip: &[PathBuf],
+    ) -> Result<Vec<PathBuf>> {
+        let key = link_key(old_title);
+        if key == link_key(new_title) {
+            return Ok(Vec::new());
+        }
+        let mut done = Vec::new();
+        for j in 0..self.notes.len() {
+            let n = &self.notes[j];
+            if skip.contains(&n.path) || !n.links.iter().any(|l| link_key(l) == key) {
+                continue;
+            }
+            let text = note::replace_links(&n.text, old_title, new_title);
+            let path = n.path.clone();
+            write_atomic(&path, &text)?;
+            self.notes[j] = load_note(n.root, &path)?;
+            done.push(path);
+        }
+        Ok(done)
     }
 
     pub fn trash(&mut self, idx: usize) -> Result<()> {
@@ -736,6 +802,78 @@ mod tests {
         assert_eq!(store.notes[0].path, new.join("sub").join("n.md"));
         assert_eq!(store.folders, vec![new.clone(), new.join("sub")]);
         assert!(new.join("sub").join("n.md").exists());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    fn idx(store: &Store, name: &str) -> usize {
+        store
+            .notes
+            .iter()
+            .position(|n| n.path.file_name().unwrap() == name)
+            .unwrap()
+    }
+
+    #[test]
+    fn resolve_link_prefers_title_then_stem() {
+        let dir = temp_dir();
+        fs::write(dir.join("plan.md"), "# Weekly plan\n").unwrap();
+        fs::write(dir.join("other.md"), "# Other\n").unwrap();
+        let store = load(&dir);
+        assert_eq!(
+            store.resolve_link("weekly PLAN"),
+            Some(idx(&store, "plan.md"))
+        );
+        assert_eq!(store.resolve_link("other"), Some(idx(&store, "other.md")));
+        assert_eq!(store.resolve_link("plan"), Some(idx(&store, "plan.md")));
+        assert_eq!(store.resolve_link("nope"), None);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn backlinks_follow_resolved_links() {
+        let dir = temp_dir();
+        fs::write(dir.join("a.md"), "# A\n\n[[B]]\n").unwrap();
+        fs::write(dir.join("b.md"), "# B\n").unwrap();
+        fs::write(dir.join("c.md"), "# C\n").unwrap();
+        let store = load(&dir);
+        let (a, b) = (idx(&store, "a.md"), idx(&store, "b.md"));
+        assert_eq!(store.backlinks(b), vec![a]);
+        assert_eq!(store.backlinks(a), Vec::<usize>::new());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn relink_rewrites_files_and_skips_listed_paths() {
+        let dir = temp_dir();
+        fs::write(dir.join("a.md"), "# A\n\nsee [[B]]\n").unwrap();
+        fs::write(dir.join("b.md"), "# B\n").unwrap();
+        fs::write(dir.join("d.md"), "# D\n\n[[B]]\n").unwrap();
+        let mut store = load(&dir);
+        let d = dir.join("d.md");
+        let done = store.relink("B", "Bee", std::slice::from_ref(&d)).unwrap();
+        assert_eq!(done, vec![dir.join("a.md")]);
+        assert_eq!(
+            fs::read_to_string(dir.join("a.md")).unwrap(),
+            "# A\n\nsee [[Bee]]\n"
+        );
+        assert_eq!(fs::read_to_string(&d).unwrap(), "# D\n\n[[B]]\n");
+        assert_eq!(store.notes[idx(&store, "a.md")].links, vec!["Bee"]);
+        assert!(store.relink("x", "X", &[]).unwrap().is_empty());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn create_names_the_file_after_the_title() {
+        let dir = temp_dir();
+        let mut store = load(&dir);
+        let i = store.create(&dir, "# Groceries\n").unwrap();
+        assert_eq!(store.notes[i].path, dir.join("groceries.md"));
+        assert_eq!(
+            store.note_id(&store.notes[i]),
+            format!("{}/groceries", store.roots[0].name)
+        );
+        let i = store.create(&dir, "# ").unwrap();
+        assert_eq!(store.notes[i].path, dir.join("untitled.md"));
         fs::remove_dir_all(&dir).unwrap();
     }
 }
