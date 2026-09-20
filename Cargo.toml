@@ -20,6 +20,7 @@ notify = "8"
 nucleo-matcher = "0.3"
 ratatui = { version = "0.30", features = ["unstable-rendered-line-info"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 toml = "0.9"
 tui-markdown = { version = "0.3", default-features = false }
 

@@ -1,4 +1,5 @@
 mod app;
+mod cli;
 mod config;
 mod index;
 mod note;
@@ -24,15 +25,26 @@ use crate::store::Store;
 #[command(version, about)]
 struct Args {
     /// Single notes folder for this session (overrides config `roots`).
-    #[arg(long)]
+    #[arg(long, global = true)]
     dir: Option<PathBuf>,
+    /// Machine-readable output for subcommands.
+    #[arg(long, global = true)]
+    json: bool,
     /// Folder to add to your roots (saved to config) and open.
     folder: Option<PathBuf>,
+    #[command(subcommand)]
+    cmd: Option<cli::Cmd>,
 }
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+    if args.cmd.is_some() && args.folder.is_some() {
+        anyhow::bail!("a folder argument cannot be combined with a subcommand");
+    }
     let mut cfg = config::load(args.dir)?;
+    if let Some(cmd) = args.cmd {
+        return cli::run(cmd, &cfg, args.json);
+    }
     let mut start = None;
     if let Some(folder) = args.folder {
         let root = config::resolve_root(&folder)?;
