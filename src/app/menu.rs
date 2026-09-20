@@ -25,6 +25,7 @@ pub enum MenuAction {
     Copy,
     Paste,
     TogglePreview,
+    Backlinks,
     InsertTag,
     SortBy(SortMode),
     Settings,
@@ -169,6 +170,7 @@ impl App {
                 Some('l'),
                 A::TogglePreview,
             ));
+            items.push(item("backlinks", Some('b'), A::Backlinks));
             return items;
         }
         // Empty space: list body, tab bar, status bar.
@@ -309,6 +311,11 @@ impl App {
             A::TogglePreview => {
                 self.focus = Pane::Editor;
                 self.toggle_preview();
+            }
+            A::Backlinks => {
+                if let Some(p) = self.active_tab().map(|t| t.path.clone()) {
+                    self.open_backlinks(p);
+                }
             }
             A::InsertTag => {
                 self.focus = Pane::Editor;

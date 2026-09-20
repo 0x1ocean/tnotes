@@ -78,7 +78,7 @@ mod tabs;
 
 use editor::{draw_editor, draw_popup};
 use navigator::{centered_text, draw_navigator};
-use overlays::{draw_browser, draw_confirm, draw_menu, draw_picker, draw_prompt};
+use overlays::{draw_backlinks, draw_browser, draw_confirm, draw_menu, draw_picker, draw_prompt};
 use settings::draw_settings_page;
 use status::draw_status;
 use tabs::draw_tabs;
@@ -114,6 +114,8 @@ pub struct Hits {
     pub status_help: Rect,
     pub status_sort: Rect,
     pub status_filter: Rect,
+    /// `↩ N` backlinks count of the active note.
+    pub status_backlinks: Rect,
     pub settings_link: Rect,
     /// Narrow layout: fold header above the tree.
     pub tree_header: Rect,
@@ -245,6 +247,7 @@ fn draw_overlays(f: &mut Frame, app: &mut App, area: Rect, hits: &mut Hits) {
         Overlay::Confirm(a) => draw_confirm(f, app, area, &a, hits),
         Overlay::Prompt(k) => draw_prompt(f, app, area, &k, hits),
         Overlay::Picker(p) => draw_picker(f, app, area, &p, hits),
+        Overlay::Backlinks(p) => draw_backlinks(f, app, area, &p, hits),
         Overlay::Menu(m) => draw_menu(f, area, &m, hits),
         Overlay::Browse => draw_browser(f, app, area, hits),
     }

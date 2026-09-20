@@ -91,6 +91,18 @@ impl App {
                     self.refilter_picker();
                 }
             },
+            Overlay::Backlinks(_) => match (k.code, ctrl) {
+                (KeyCode::Esc, _) => self.overlay = Overlay::None,
+                (KeyCode::Enter, _) => self.open_backlink(self.backlink_sel),
+                (KeyCode::Down, _) | (KeyCode::Char('j'), _) | (KeyCode::Char('n'), true) => {
+                    self.backlink_sel =
+                        (self.backlink_sel + 1).min(self.backlink_rows.len().saturating_sub(1));
+                }
+                (KeyCode::Up, _) | (KeyCode::Char('k'), _) | (KeyCode::Char('p'), true) => {
+                    self.backlink_sel = self.backlink_sel.saturating_sub(1);
+                }
+                _ => {}
+            },
             Overlay::Menu(menu) => self.menu_key(k, menu),
             Overlay::Browse => self.browser_key(k),
             Overlay::None => {}

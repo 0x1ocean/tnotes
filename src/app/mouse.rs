@@ -16,6 +16,7 @@ enum Target {
     StatusHelp,
     StatusSort,
     StatusFilter,
+    StatusBacklinks,
     SettingsLink,
     TreeHeader,
     Tree,
@@ -76,6 +77,11 @@ impl App {
                 Some(Target::StatusHelp) => self.open_help(),
                 Some(Target::StatusSort) => self.cycle_sort(),
                 Some(Target::StatusFilter) => self.reveal_filter(),
+                Some(Target::StatusBacklinks) => {
+                    if let Some(p) = self.active_tab().map(|t| t.path.clone()) {
+                        self.open_backlinks(p);
+                    }
+                }
                 Some(Target::SettingsLink) => self.open_settings(),
                 Some(Target::TreeHeader) => {
                     self.tree_folded = !self.tree_folded;
@@ -182,6 +188,16 @@ impl App {
                     self.overlay = Overlay::None;
                 }
             }
+            Overlay::Backlinks(_) => {
+                if !down {
+                    return;
+                }
+                if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                    self.open_backlink(i);
+                } else if !self.hits.overlay.contains(pos) {
+                    self.overlay = Overlay::None;
+                }
+            }
             Overlay::Menu(menu) => match m.kind {
                 MouseEventKind::Down(MouseButton::Left) => {
                     if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
@@ -218,7 +234,7 @@ impl App {
         if let Some(&(i, _)) = h.tabs.iter().find(|(_, r)| r.contains(pos)) {
             return Some(Target::Tab(i));
         }
-        let flat: [(Rect, Target); 10] = [
+        let flat: [(Rect, Target); 11] = [
             (h.tab_close, Target::TabClose),
             (h.tab_new, Target::TabNew),
             (h.sidebar_toggle, Target::PanelSwitch),
@@ -226,6 +242,7 @@ impl App {
             (h.status_help, Target::StatusHelp),
             (h.status_sort, Target::StatusSort),
             (h.status_filter, Target::StatusFilter),
+            (h.status_backlinks, Target::StatusBacklinks),
             (h.settings_link, Target::SettingsLink),
             (h.tree_header, Target::TreeHeader),
             (h.search, Target::Search),

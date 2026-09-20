@@ -109,6 +109,15 @@ pub(super) fn draw_status(f: &mut Frame, app: &App, area: Rect, hits: &mut Hits)
             let words = note.text.split_whitespace().count();
             right.push(seg(format!("{words} words"), dim_s).shrink(1, vec![String::new()]));
         }
+        if let Some(idx) = app.store.notes.iter().position(|n| n.path == tab.path) {
+            let n = app.store.backlinks(idx).len();
+            if n > 0 {
+                right.push(
+                    hit(format!("↩ {n}"), dim_s, &mut hits.status_backlinks)
+                        .shrink(1, vec![String::new()]),
+                );
+            }
+        }
         if app.tab_in_trash(app.active) {
             right.push(seg("read-only", dim_s));
         } else if tab.preview {

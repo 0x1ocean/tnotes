@@ -115,6 +115,8 @@ pub enum Overlay {
     Prompt(PromptKind),
     /// Move-note picker for the note at this path.
     Picker(PathBuf),
+    /// Notes linking to this path.
+    Backlinks(PathBuf),
     Menu(Menu),
     /// Folder browser (add root).
     Browse,
@@ -213,6 +215,8 @@ pub struct App {
     pub picker_query: EditorState,
     pub picker_sel: usize,
     pub picker_rows: Vec<PathBuf>,
+    pub backlink_rows: Vec<PathBuf>,
+    pub backlink_sel: usize,
     pub browser: browser::Browser,
     /// Folder given on the command line: applied as the filter after the session restore.
     pub start_filter: Option<PathBuf>,
@@ -316,6 +320,8 @@ impl App {
             picker_query: single_line(""),
             picker_sel: 0,
             picker_rows: Vec::new(),
+            backlink_rows: Vec::new(),
+            backlink_sel: 0,
             browser: browser::Browser::default(),
             start_filter: None,
             last_trash: None,

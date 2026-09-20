@@ -348,3 +348,23 @@ fn title_change_rewrites_links_in_other_notes() {
             .contains("updated links in 2")
     );
 }
+
+#[test]
+fn backlinks_overlay_opens_the_source_note() {
+    let mut f = fixture(&[("a.md", "# A\n\n[[B]]\n"), ("b.md", "# B\n")]);
+    let (a, b) = (note_path(&f.app, "a.md"), note_path(&f.app, "b.md"));
+    let app = &mut f.app;
+    open_pinned(app, "b.md");
+    app.tabs[app.active].editor.cursor = Index2::new(0, 1);
+    app.on_key(alt(KeyCode::Enter));
+    assert_eq!(app.overlay, Overlay::Backlinks(b.clone()));
+    assert_eq!(app.backlink_rows, vec![a.clone()]);
+    app.on_key(key(KeyCode::Enter));
+    assert_eq!(app.overlay, Overlay::None);
+    assert_eq!(app.tabs[app.active].path, a);
+    assert_eq!(app.focus, Pane::Editor);
+
+    app.on_key(alt(KeyCode::Enter));
+    assert_eq!(app.overlay, Overlay::None);
+    assert_eq!(app.status.as_ref().unwrap().text, "no backlinks");
+}

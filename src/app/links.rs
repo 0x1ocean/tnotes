@@ -1,9 +1,9 @@
-//! [[link]] navigation and rewriting links after a title change.
+//! [[link]] navigation, backlinks overlay, and rewriting links after a title change.
 
 use super::*;
 
 impl App {
-    /// `alt+enter`: open the link under the cursor.
+    /// `alt+enter`: open the link under the cursor; without one, show this note's backlinks.
     pub(super) fn follow_link_at_cursor(&mut self) {
         let Some(tab) = self.active_tab() else { return };
         let link = (!tab.preview)
@@ -15,13 +15,42 @@ impl App {
                     .and_then(|l| markdown::link_at(l, cur.col))
             })
             .flatten();
+        let from = tab.path.clone();
         match link {
-            Some(target) => {
-                let from = tab.path.clone();
-                self.open_link(&target, &from);
-            }
-            None => self.set_status(StatusKind::Info, "no link under cursor".into()),
+            Some(target) => self.open_link(&target, &from),
+            None => self.open_backlinks(from),
         }
+    }
+
+    /// Overlay listing the notes that link to `path`.
+    pub(super) fn open_backlinks(&mut self, path: PathBuf) {
+        let Some(idx) = self.store.notes.iter().position(|n| n.path == path) else {
+            return;
+        };
+        let rows: Vec<PathBuf> = self
+            .store
+            .backlinks(idx)
+            .into_iter()
+            .map(|i| self.store.notes[i].path.clone())
+            .collect();
+        if rows.is_empty() {
+            self.set_status(StatusKind::Info, "no backlinks".into());
+            return;
+        }
+        self.backlink_rows = rows;
+        self.backlink_sel = 0;
+        self.popup = None;
+        self.overlay = Overlay::Backlinks(path);
+    }
+
+    /// Open backlink row `i` and close the overlay.
+    pub(super) fn open_backlink(&mut self, i: usize) {
+        let Some(p) = self.backlink_rows.get(i).cloned() else {
+            return;
+        };
+        self.overlay = Overlay::None;
+        self.show_note(p, true);
+        self.focus = Pane::Editor;
     }
 
     /// Open the note a `[[target]]` resolves to; create `# target` in `from`'s folder when none does.

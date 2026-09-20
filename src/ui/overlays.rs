@@ -163,6 +163,69 @@ pub(super) fn draw_picker(
     f.render_widget(Paragraph::new(lines), body);
 }
 
+/// Notes linking to `path`; enter opens the selected one.
+pub(super) fn draw_backlinks(
+    f: &mut Frame,
+    app: &App,
+    area: Rect,
+    path: &std::path::Path,
+    hits: &mut Hits,
+) {
+    let title = app
+        .note_by_path(path)
+        .map(|(n, _)| n.title.clone())
+        .unwrap_or_else(|| {
+            path.file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default()
+        });
+    let rect = centered(area, 60, 14);
+    f.render_widget(Clear, rect);
+    let block = overlay_block(
+        format!(" ↩ links to \"{}\" ", truncate(&title, 40)),
+        " enter open · esc close ".into(),
+    );
+    let inner = block.inner(rect);
+    f.render_widget(block, rect);
+    hits.overlay = rect;
+    hits.overlay_rows.clear();
+    if inner.width < 5 || inner.height < 1 {
+        return;
+    }
+    let cap = inner.height as usize;
+    let offset = app.backlink_sel.saturating_sub(cap - 1);
+    let mut lines = Vec::with_capacity(cap);
+    for (i, p) in app.backlink_rows.iter().enumerate().skip(offset).take(cap) {
+        let note_title = app
+            .note_by_path(p)
+            .map(|(n, _)| n.title.clone())
+            .unwrap_or_default();
+        let folder = p
+            .parent()
+            .map(|d| app.store.folder_label(d))
+            .unwrap_or_default();
+        let w = inner.width as usize - 2;
+        let label = truncate(&note_title, w.saturating_sub(folder.chars().count() + 2));
+        let (marker, style) = if i == app.backlink_sel {
+            (" ▎", Style::new().add_modifier(Modifier::BOLD))
+        } else {
+            ("  ", Style::new())
+        };
+        lines.push(Line::from(vec![
+            Span::styled(marker, Style::new().fg(accent())),
+            Span::styled(label, style),
+            Span::styled(format!("  {folder}"), Style::new().fg(dim())),
+        ]));
+        hits.overlay_rows.push(Rect::new(
+            inner.x,
+            inner.y + (i - offset) as u16,
+            inner.width,
+            1,
+        ));
+    }
+    f.render_widget(Paragraph::new(lines), inner);
+}
+
 pub(super) fn draw_menu(f: &mut Frame, area: Rect, menu: &Menu, hits: &mut Hits) {
     let label_w = menu
         .items
