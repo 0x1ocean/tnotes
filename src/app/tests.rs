@@ -18,9 +18,9 @@ pub(super) struct Fixture {
     _tx: Sender<PathBuf>,
 }
 
-pub(super) fn config(dir: &PathBuf) -> Config {
+pub(super) fn config(dir: &Path) -> Config {
     Config {
-        roots: vec![dir.clone()],
+        roots: vec![dir.to_path_buf()],
         roots_fixed: false,
         first_run: false,
         path: None,
@@ -43,7 +43,7 @@ pub(super) fn fixture(notes: &[(&str, &str)]) -> Fixture {
     for (name, text) in notes {
         fs::write(dir.join(name), text).unwrap();
     }
-    let store = Store::load(&[dir.clone()]).unwrap();
+    let store = Store::load(std::slice::from_ref(&dir)).unwrap();
     let (tx, rx) = channel();
     let app = App::new(config(&dir), store, rx, Vec::new());
     Fixture { app, dir, _tx: tx }
