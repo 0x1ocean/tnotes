@@ -13,6 +13,8 @@ pub struct Note {
     pub title: String,
     /// Full tag paths (`work/project`), lowercase, deduped, sorted.
     pub tags: Vec<String>,
+    /// `[[link]]` targets as written, trimmed, deduplicated case-insensitively, in text order.
+    pub links: Vec<String>,
     /// Filesystem mtime after the last load/save.
     pub modified: SystemTime,
     /// Filesystem birth time; falls back to `modified` where unsupported.
@@ -30,6 +32,7 @@ impl Note {
         Self {
             title: title_of(&text),
             tags: tags_of(&text),
+            links: links_of(&text),
             root,
             path,
             text,
@@ -168,6 +171,109 @@ pub fn tags_of(text: &str) -> Vec<String> {
     tags
 }
 
+/// Normalised comparison key of a link target or title.
+pub fn link_key(s: &str) -> String {
+    s.trim().to_lowercase()
+}
+
+/// `[[target]]` span starting at byte `open` (which must point at `[[`): the byte range of
+/// the trimmed inner text and the byte index just past the closing `]]`. A target is the
+/// text up to the next `]]` on the line; it is rejected when empty after trimming or when
+/// it contains `[` or `]`.
+fn link_span(line: &str, open: usize) -> Option<(std::ops::Range<usize>, usize)> {
+    let rest = &line[open + 2..];
+    let close = rest.find("]]")?;
+    let inner = &rest[..close];
+    if inner.contains(['[', ']']) {
+        return None;
+    }
+    let trimmed = inner.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let start = open + 2 + (trimmed.as_ptr() as usize - inner.as_ptr() as usize);
+    Some((start..start + trimmed.len(), open + 2 + close + 2))
+}
+
+/// Lines outside fenced code blocks, with their fence state tracked.
+fn unfenced(text: &str) -> impl Iterator<Item = &str> {
+    let mut in_fence = false;
+    text.lines().filter(move |line| {
+        if line.trim_start().starts_with("```") {
+            in_fence = !in_fence;
+            return false;
+        }
+        !in_fence
+    })
+}
+
+/// `[[target]]` occurrences outside fenced code blocks. A target is the text between
+/// `[[` and the next `]]` on the same line; it is rejected when empty after trimming or
+/// when it contains `[` or `]`.
+pub fn links_of(text: &str) -> Vec<String> {
+    let mut links: Vec<String> = Vec::new();
+    for line in unfenced(text) {
+        let mut from = 0;
+        while let Some(off) = line[from..].find("[[") {
+            let open = from + off;
+            match link_span(line, open) {
+                Some((inner, end)) => {
+                    let target = &line[inner];
+                    let key = link_key(target);
+                    if !links.iter().any(|l| link_key(l) == key) {
+                        links.push(target.to_string());
+                    }
+                    from = end;
+                }
+                None => from = open + 1,
+            }
+        }
+    }
+    links
+}
+
+/// Rewrite every `[[X]]` whose `link_key(X) == link_key(old)` to `[[new]]`, outside fences.
+/// Returns the text unchanged when nothing matched.
+pub fn replace_links(text: &str, old: &str, new: &str) -> String {
+    let key = link_key(old);
+    let mut out = String::with_capacity(text.len());
+    let mut in_fence = false;
+    for line in text.split_inclusive('\n') {
+        let body = line.strip_suffix('\n').unwrap_or(line);
+        if body.trim_start().starts_with("```") {
+            in_fence = !in_fence;
+            out.push_str(line);
+            continue;
+        }
+        if in_fence {
+            out.push_str(line);
+            continue;
+        }
+        let mut from = 0;
+        while let Some(off) = body[from..].find("[[") {
+            let open = from + off;
+            match link_span(body, open) {
+                Some((inner, end)) => {
+                    if link_key(&body[inner.clone()]) == key {
+                        out.push_str(&body[from..inner.start]);
+                        out.push_str(new);
+                        out.push_str(&body[inner.end..end]);
+                    } else {
+                        out.push_str(&body[from..end]);
+                    }
+                    from = end;
+                }
+                None => {
+                    out.push_str(&body[from..open + 1]);
+                    from = open + 1;
+                }
+            }
+        }
+        out.push_str(&line[from..]);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -232,5 +338,27 @@ mod tests {
         assert_eq!(n.preview(), "milk");
         let n = Note::from_text(0, "/x.md".into(), "# T\n#work/x done\n".into(), t, t);
         assert_eq!(n.preview(), "#work/x done");
+    }
+
+    #[test]
+    fn links_parse_and_dedup() {
+        assert_eq!(
+            links_of("see [[Weekly plan]] and [[weekly PLAN]] and [[a[b]]"),
+            vec!["Weekly plan"]
+        );
+        assert_eq!(links_of("```\n[[x]]\n```\n"), Vec::<String>::new());
+        assert_eq!(links_of("[[ ]] [[a]][[b]]"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn replace_links_is_case_insensitive_and_keeps_other_text() {
+        assert_eq!(
+            replace_links("[[Old]] · [[old]] · [[Older]]", "old", "New"),
+            "[[New]] · [[New]] · [[Older]]"
+        );
+        assert_eq!(
+            replace_links("x [[ old ]]\n```\n[[old]]\n```\n[[old]]", "old", "N"),
+            "x [[ N ]]\n```\n[[old]]\n```\n[[N]]"
+        );
     }
 }
