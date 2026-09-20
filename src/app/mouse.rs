@@ -118,16 +118,21 @@ impl App {
                             .and_then(markdown::list_line)
                             .and_then(|it| it.checkbox)
                             .is_some_and(|b| (b..b + 3).contains(&cur.col));
-                        // Ctrl+click on a `#tag` filters the list by it.
-                        let tag = if m.modifiers.contains(KeyModifiers::CONTROL) {
-                            line.as_deref().and_then(|l| markdown::tag_at(l, cur.col))
-                        } else {
-                            None
-                        };
+                        // Ctrl+click: `[[link]]` opens the note, `#tag` filters the list.
+                        let ctrl = m.modifiers.contains(KeyModifiers::CONTROL);
+                        let link = ctrl
+                            .then(|| line.as_deref().and_then(|l| markdown::link_at(l, cur.col)))
+                            .flatten();
+                        let tag = ctrl
+                            .then(|| line.as_deref().and_then(|l| markdown::tag_at(l, cur.col)))
+                            .flatten();
                         if on_box {
                             self.toggle_checkbox();
                         }
-                        if let Some(tag) = tag {
+                        if let Some(t) = link {
+                            let from = self.tabs[self.active].path.clone();
+                            self.open_link(&t, &from);
+                        } else if let Some(tag) = tag {
                             self.filter_by_tag(&tag);
                         }
                     }

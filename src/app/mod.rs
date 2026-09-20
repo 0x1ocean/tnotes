@@ -38,6 +38,7 @@ pub use navigate::TreeRow;
 pub use settings::{SETTINGS_SECTIONS, SettingKind, SettingsPage};
 pub mod keymap;
 mod keys;
+mod links;
 mod markdown;
 mod menu;
 mod mouse;

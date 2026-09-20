@@ -133,11 +133,19 @@ impl App {
             self.tabs[i].dirty = false;
             return;
         }
+        let old_title = self.store.notes[idx].title.clone();
         match self.store.save(idx, &text) {
             Ok(SaveOutcome::Saved) => {
                 self.tabs[i].dirty = false;
                 self.tabs[i].path = self.store.notes[idx].path.clone();
                 self.refresh();
+                let new_title = self.store.notes[idx].title.clone();
+                if old_title != "Untitled"
+                    && note::link_key(&old_title) != note::link_key(&new_title)
+                {
+                    let p = self.tabs[i].path.clone();
+                    self.relink(&old_title, &new_title, &p);
+                }
             }
             Ok(SaveOutcome::Conflict(p)) => {
                 self.tabs[i].dirty = false;

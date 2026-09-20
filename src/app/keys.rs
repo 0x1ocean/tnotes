@@ -180,6 +180,10 @@ impl App {
             }
             return;
         };
+        if k.code == KeyCode::Enter && k.modifiers == KeyModifiers::ALT {
+            self.follow_link_at_cursor();
+            return;
+        }
         if tab.preview {
             self.preview_key(k);
             return;

@@ -292,3 +292,59 @@ fn link_popup_completes_titles() {
     assert!(app.popup.is_none());
     assert_eq!(app.tabs[0].editor.cursor, Index2::new(1, 15));
 }
+
+#[test]
+fn alt_enter_follows_a_link_and_creates_a_missing_one() {
+    let mut f = fixture(&[("a.md", "# A\n\n[[B]]\n"), ("b.md", "# B\n")]);
+    let b = note_path(&f.app, "b.md");
+    let app = &mut f.app;
+    open_pinned(app, "a.md");
+    app.tabs[0].editor.cursor = Index2::new(2, 2);
+    app.on_key(alt(KeyCode::Enter));
+    assert_eq!(app.tabs[app.active].path, b);
+
+    let mut f = fixture(&[("a.md", "# A\n\n[[Zed]]\n")]);
+    let app = &mut f.app;
+    open_pinned(app, "a.md");
+    app.tabs[0].editor.cursor = Index2::new(2, 3);
+    app.on_key(alt(KeyCode::Enter));
+    let zed = f.dir.join("zed.md");
+    assert_eq!(app.store.notes.len(), 2);
+    assert_eq!(fs::read_to_string(&zed).unwrap(), "# Zed\n");
+    assert_eq!(app.tabs[app.active].path, zed);
+    assert_eq!(app.tabs[app.active].editor.cursor, Index2::new(0, 5));
+    assert_eq!(app.focus, Pane::Editor);
+}
+
+#[test]
+fn title_change_rewrites_links_in_other_notes() {
+    let mut f = fixture(&[
+        ("b.md", "# B\n"),
+        ("a.md", "# A\n\n[[B]]\n"),
+        ("c.md", "# C\n\n[[b]]\n"),
+    ]);
+    let (a, c) = (note_path(&f.app, "a.md"), note_path(&f.app, "c.md"));
+    let app = &mut f.app;
+    open_pinned(app, "c.md");
+    app.tabs[app.active].editor.cursor = Index2::new(0, 3);
+    type_str(app, "x");
+    open_pinned(app, "b.md");
+    app.tabs[app.active].editor.cursor = Index2::new(0, 3);
+    type_str(app, "ee");
+    app.save_tab(app.active);
+    assert_eq!(app.tabs[app.active].path, f.dir.join("bee.md"));
+    assert_eq!(fs::read_to_string(&a).unwrap(), "# A\n\n[[Bee]]\n");
+    let ct = app.tabs.iter().find(|t| t.path == c).unwrap();
+    assert!(ct.dirty);
+    assert_eq!(ct.editor.lines.to_string(), "# Cx\n\n[[Bee]]\n");
+    assert_eq!(fs::read_to_string(&c).unwrap(), "# C\n\n[[b]]\n");
+    let b_idx = app.store.resolve_link("Bee").unwrap();
+    assert_eq!(app.store.backlinks(b_idx).len(), 1);
+    assert!(
+        app.status
+            .as_ref()
+            .unwrap()
+            .text
+            .contains("updated links in 2")
+    );
+}

@@ -172,10 +172,12 @@ pub const BINDINGS: &[Binding] = &[
     doc(Tree, "h / l", "switch pane"),
     doc(Editor, "esc", "back to list"),
     doc(Editor, "#… tab", "complete tag"),
+    doc(Editor, "[[… tab", "complete link"),
+    doc(Editor, "alt+enter", "follow [[link]] · backlinks"),
     doc(Editor, "enter", "continue list · empty item ends it"),
     doc(Editor, "alt+x", "toggle task (or click the box)"),
     doc(Editor, "tab / shift+tab", "nest / un-nest list item"),
-    doc(Editor, "ctrl+click", "#tag → filter by it"),
+    doc(Editor, "ctrl+click", "#tag → filter · [[link]] → open"),
 ];
 
 /// Global action for a key event, if any.
