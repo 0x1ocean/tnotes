@@ -34,7 +34,7 @@ impl App {
                 self.active = self.tabs.len() - 1;
             }
         }
-        self.tag_popup = None;
+        self.popup = None;
         self.refresh();
         self.persist_session();
     }
@@ -69,7 +69,7 @@ impl App {
             self.active = self.active.saturating_sub(1);
         }
         self.active = self.active.min(self.tabs.len().saturating_sub(1));
-        self.tag_popup = None;
+        self.popup = None;
         self.refresh();
         self.persist_session();
     }
@@ -77,7 +77,7 @@ impl App {
     pub(super) fn activate_tab(&mut self, i: usize) {
         if i < self.tabs.len() && i != self.active {
             self.active = i;
-            self.tag_popup = None;
+            self.popup = None;
             self.refresh();
             self.persist_session();
         }
@@ -202,7 +202,7 @@ impl App {
             t.preview = !t.preview;
             t.preview_scroll = 0;
         }
-        self.tag_popup = None;
+        self.popup = None;
     }
 
     pub(super) fn scroll_preview(&mut self, delta: i32) {

@@ -37,7 +37,7 @@ impl App {
                 return;
             }
             // Popup rows are hit-tested as `Target::PopupRow` in the main path.
-            Layer::TagPopup | Layer::Main => {}
+            Layer::Popup | Layer::Main => {}
         }
 
         if matches!(m.kind, MouseEventKind::Down(MouseButton::Right)) {
@@ -67,7 +67,7 @@ impl App {
                 }
             }
             MouseEventKind::Down(MouseButton::Left) => match self.click_target(pos) {
-                Some(Target::PopupRow(i)) => self.accept_tag(Some(i)),
+                Some(Target::PopupRow(i)) => self.accept_popup(Some(i)),
                 Some(Target::Tab(i)) => self.activate_tab(i),
                 Some(Target::TabClose) => self.close_tab(self.active),
                 Some(Target::TabNew) => self.new_note(),
@@ -107,7 +107,7 @@ impl App {
                 Some(Target::Editor) => {
                     self.focus = Pane::Editor;
                     self.search_active = false;
-                    self.tag_popup = None;
+                    self.popup = None;
                     if !preview && let Some(t) = self.tabs.get_mut(self.active) {
                         self.editor_handler.on_event(Event::Mouse(m), &mut t.editor);
                         let cur = t.editor.cursor;

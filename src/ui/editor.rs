@@ -70,8 +70,8 @@ pub(super) fn draw_editor(f: &mut Frame, app: &mut App, area: Rect, hits: &mut H
     }
 }
 
-pub(super) fn draw_tag_popup(f: &mut Frame, app: &App, area: Rect, hits: &mut Hits) {
-    let Some(popup) = &app.tag_popup else { return };
+pub(super) fn draw_popup(f: &mut Frame, app: &App, area: Rect, hits: &mut Hits) {
+    let Some(popup) = &app.popup else { return };
     let Some(pos) = app
         .active_tab()
         .and_then(|t| t.editor.cursor_screen_position())

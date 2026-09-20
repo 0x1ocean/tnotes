@@ -142,7 +142,7 @@ impl App {
         if !self.sidebar {
             self.focus = Pane::Editor;
             self.search_active = false;
-            self.tag_popup = None;
+            self.popup = None;
             return;
         }
         const ORDER: [Pane; 3] = [Pane::Tree, Pane::List, Pane::Editor];
@@ -154,7 +154,7 @@ impl App {
         };
         self.focus = ORDER[next];
         self.search_active = false;
-        self.tag_popup = None;
+        self.popup = None;
     }
 
     /// Footer `<<`/`>>`: wide layout hides/shows the sidebar; narrow layout switches
@@ -170,7 +170,7 @@ impl App {
                 Pane::Editor
             };
             self.search_active = false;
-            self.tag_popup = None;
+            self.popup = None;
             return;
         }
         self.sidebar = !self.sidebar;
@@ -180,7 +180,7 @@ impl App {
         } else if self.sidebar && self.tabs.is_empty() {
             self.focus = Pane::List;
         }
-        self.tag_popup = None;
+        self.popup = None;
         self.persist_session();
     }
 

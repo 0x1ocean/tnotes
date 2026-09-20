@@ -199,7 +199,7 @@ impl App {
             self.overlay = Overlay::None;
             return;
         }
-        self.tag_popup = None;
+        self.popup = None;
         self.overlay = Overlay::Menu(Menu {
             items,
             sel: 0,
@@ -317,7 +317,7 @@ impl App {
                     tab.editor.execute(InsertChar('#'));
                 }
                 self.after_edit();
-                self.recompute_tag_popup();
+                self.recompute_popup();
             }
             A::SortBy(m) => {
                 self.sort = m;

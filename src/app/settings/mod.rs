@@ -73,7 +73,7 @@ impl App {
         self.settings = Some(SettingsPage::default());
         self.overlay = Overlay::None;
         self.search_active = false;
-        self.tag_popup = None;
+        self.popup = None;
     }
 
     /// `?` / `F1`: the keys section of the settings page.

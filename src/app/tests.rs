@@ -275,3 +275,20 @@ fn alt_period_switches_tabs_from_the_editor() {
     app.on_key(alt(KeyCode::Char(',')));
     assert_eq!(app.active, 0);
 }
+
+#[test]
+fn link_popup_completes_titles() {
+    let mut f = fixture(&[("a.md", "# A\n\n"), ("plan.md", "# Weekly plan\n")]);
+    let app = &mut f.app;
+    open_pinned(app, "a.md");
+    app.tabs[0].editor.cursor = Index2::new(1, 0);
+    type_str(app, "[[wee");
+    assert_eq!(
+        app.popup.as_ref().map(|p| p.candidates.clone()),
+        Some(vec!["Weekly plan".to_string()])
+    );
+    app.on_key(key(KeyCode::Tab));
+    assert_eq!(line(app, 1), "[[Weekly plan]]");
+    assert!(app.popup.is_none());
+    assert_eq!(app.tabs[0].editor.cursor, Index2::new(1, 15));
+}

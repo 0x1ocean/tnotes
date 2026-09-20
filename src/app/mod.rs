@@ -4,7 +4,9 @@ use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use edtui::actions::{CopyLine, CopySelection, DeleteLine, DeleteSelection, InsertChar, Paste};
+use edtui::actions::{
+    CopyLine, CopySelection, DeleteChar, DeleteLine, DeleteSelection, InsertChar, Paste,
+};
 use edtui::{EditorEventHandler, EditorMode, EditorState, Index2, Lines, RowIndex};
 use notify::RecommendedWatcher;
 use nucleo_matcher::pattern::{CaseMatching, Normalization, Pattern};
@@ -43,10 +45,10 @@ mod navigate;
 mod notes;
 mod persist;
 mod picker;
+mod popup;
 mod settings;
 mod sync;
 mod tabs;
-mod tags;
 
 #[cfg(test)]
 mod tests;
@@ -69,7 +71,7 @@ pub enum Pane {
 pub enum Layer {
     Overlay,
     Settings,
-    TagPopup,
+    Popup,
     Main,
 }
 
@@ -143,10 +145,20 @@ impl SortMode {
     }
 }
 
-pub struct TagPopup {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PopupKind {
+    /// `#tag` completion; candidates extend what is typed.
+    Tag,
+    /// `[[title` completion; the typed text is replaced by the title and closed with `]]`.
+    Link,
+}
+
+/// Completion popup anchored at the editor cursor.
+pub struct Popup {
+    pub kind: PopupKind,
     pub candidates: Vec<String>,
     pub sel: usize,
-    /// Chars typed after `#` (the part already present in the buffer).
+    /// Chars typed after `#` / `[[` (the part already present in the buffer).
     pub typed: usize,
 }
 
@@ -194,7 +206,7 @@ pub struct App {
     /// Key scheme the running editor handler uses (config edits apply on next launch).
     pub keys: EditorKeys,
     pub sort: SortMode,
-    pub tag_popup: Option<TagPopup>,
+    pub popup: Option<Popup>,
     pub prompt: EditorState,
     pub prompt_candidates: Vec<String>,
     pub picker_query: EditorState,
@@ -297,7 +309,7 @@ impl App {
             editor_handler,
             keys,
             sort: SortMode::default(),
-            tag_popup: None,
+            popup: None,
             prompt: single_line(""),
             prompt_candidates: Vec::new(),
             picker_query: single_line(""),
@@ -332,8 +344,8 @@ impl App {
             Layer::Overlay
         } else if self.settings.is_some() {
             Layer::Settings
-        } else if self.tag_popup.is_some() && self.focus == Pane::Editor {
-            Layer::TagPopup
+        } else if self.popup.is_some() && self.focus == Pane::Editor {
+            Layer::Popup
         } else {
             Layer::Main
         }

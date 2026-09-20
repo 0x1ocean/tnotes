@@ -76,7 +76,7 @@ mod settings;
 mod status;
 mod tabs;
 
-use editor::{draw_editor, draw_tag_popup};
+use editor::{draw_editor, draw_popup};
 use navigator::{centered_text, draw_navigator};
 use overlays::{draw_browser, draw_confirm, draw_menu, draw_picker, draw_prompt};
 use settings::draw_settings_page;
@@ -225,7 +225,7 @@ pub fn draw(f: &mut Frame, app: &mut App) -> Hits {
     }
     draw_status(f, app, status, &mut hits);
     if app.overlay == Overlay::None && app.focus == Pane::Editor {
-        draw_tag_popup(f, app, area, &mut hits);
+        draw_popup(f, app, area, &mut hits);
     }
 
     draw_overlays(f, app, area, &mut hits);

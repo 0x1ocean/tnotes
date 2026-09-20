@@ -22,7 +22,7 @@ impl App {
                     {
                         self.editor_handler.on_paste_event(text, &mut t.editor);
                         self.after_edit();
-                        self.recompute_tag_popup();
+                        self.recompute_popup();
                     }
                 }
                 Overlay::None if self.search_active => {
@@ -39,8 +39,8 @@ impl App {
         match self.layer() {
             Layer::Overlay => self.overlay_key(k),
             Layer::Settings => self.settings_key(k),
-            Layer::TagPopup => {
-                if !self.tag_popup_key(k) {
+            Layer::Popup => {
+                if !self.popup_key(k) {
                     self.main_key(k);
                 }
             }
@@ -98,32 +98,28 @@ impl App {
     }
 
     /// Tag-completion popup keys; `true` when the key was consumed.
-    fn tag_popup_key(&mut self, k: KeyEvent) -> bool {
+    fn popup_key(&mut self, k: KeyEvent) -> bool {
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
-        let n = self
-            .tag_popup
-            .as_ref()
-            .map(|p| p.candidates.len())
-            .unwrap_or(0);
+        let n = self.popup.as_ref().map(|p| p.candidates.len()).unwrap_or(0);
         match (k.code, ctrl) {
             (KeyCode::Esc, _) => {
-                self.tag_popup = None;
+                self.popup = None;
                 true
             }
             (KeyCode::Down, _) | (KeyCode::Char('n'), true) => {
-                if let Some(p) = &mut self.tag_popup {
+                if let Some(p) = &mut self.popup {
                     p.sel = (p.sel + 1) % n;
                 }
                 true
             }
             (KeyCode::Up, _) | (KeyCode::Char('p'), true) => {
-                if let Some(p) = &mut self.tag_popup {
+                if let Some(p) = &mut self.popup {
                     p.sel = (p.sel + n - 1) % n;
                 }
                 true
             }
             (KeyCode::Tab, _) | (KeyCode::Enter, _) => {
-                self.accept_tag(None);
+                self.accept_popup(None);
                 true
             }
             _ => false,
@@ -217,7 +213,7 @@ impl App {
         let tab = &mut self.tabs[self.active];
         self.editor_handler.on_event(Event::Key(k), &mut tab.editor);
         self.after_edit();
-        self.recompute_tag_popup();
+        self.recompute_popup();
     }
 
     /// `Enter` inside a list item: continue the list (or leave it when the item is empty).
