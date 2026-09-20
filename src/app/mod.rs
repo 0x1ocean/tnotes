@@ -48,6 +48,9 @@ mod sync;
 mod tabs;
 mod tags;
 
+#[cfg(test)]
+mod tests;
+
 const STATUS_TTL: Duration = Duration::from_secs(3);
 const UNDO_TRASH_WINDOW: Duration = Duration::from_secs(5);
 const WHEEL_STEP: usize = 3;

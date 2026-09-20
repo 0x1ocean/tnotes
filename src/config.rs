@@ -120,6 +120,8 @@ pub struct Config {
     pub roots_fixed: bool,
     /// No config file yet: ask where the notes live.
     pub first_run: bool,
+    /// `config.toml` location; `None` (headless tests) makes `save` a no-op.
+    pub path: Option<PathBuf>,
     pub appearance: Appearance,
     pub editor: Editor,
     pub theme: Palette,
@@ -278,6 +280,7 @@ pub fn load(cli_dir: Option<PathBuf>) -> Result<Config> {
         roots,
         roots_fixed,
         first_run,
+        path,
         appearance,
         editor,
         theme: raw.theme.palette()?,
@@ -287,7 +290,9 @@ pub fn load(cli_dir: Option<PathBuf>) -> Result<Config> {
 /// Write settings to `config.toml` (atomic). With `--dir` the on-disk roots are left untouched.
 /// `[theme]` is preserved as written by the user.
 pub fn save(cfg: &Config) -> Result<()> {
-    let path = config_path().context("no config directory")?;
+    let Some(path) = cfg.path.clone() else {
+        return Ok(());
+    };
     let mut raw = read_raw(&path)?;
     if !cfg.roots_fixed {
         raw.roots = cfg.roots.iter().map(|r| contract_tilde(r)).collect();

@@ -4,7 +4,20 @@ use super::*;
 
 impl App {
     pub(super) fn restore_session(&mut self) {
-        let s: Session = session::load();
+        let s = session::load();
+        self.apply_session(s);
+        if let Some(root) = self.start_filter.take() {
+            self.select_root_in_tree(&root);
+            self.focus = Pane::List;
+        }
+        self.session_ready = true;
+        if self.cfg.first_run && self.cfg.roots.is_empty() {
+            self.open_first_run();
+        }
+    }
+
+    /// Apply a loaded session to the current store: filter, tabs, focus, tree selection.
+    pub(super) fn apply_session(&mut self, s: Session) {
         self.collapsed = s.collapsed.into_iter().collect();
         self.sort = SortMode::parse(&s.sort);
         self.filter = match s.filter.as_str() {
@@ -33,21 +46,10 @@ impl App {
             self.tree_sel = i;
         }
         self.refresh();
-        if let Some(root) = self.start_filter.take() {
-            self.select_root_in_tree(&root);
-            self.focus = Pane::List;
-        }
-        self.session_ready = true;
-        if self.cfg.first_run && self.cfg.roots.is_empty() {
-            self.open_first_run();
-        }
     }
 
-    pub(super) fn persist_session(&mut self) {
-        if !self.session_ready {
-            return;
-        }
-        let s = Session {
+    pub(super) fn session_snapshot(&self) -> Session {
+        Session {
             tabs: self.tabs.iter().map(|t| t.path.clone()).collect(),
             pinned: self.tabs.iter().map(|t| t.pinned).collect(),
             active: self.active,
@@ -67,7 +69,14 @@ impl App {
                 Pane::Editor => "editor",
             }
             .to_string(),
-        };
+        }
+    }
+
+    pub(super) fn persist_session(&mut self) {
+        if !self.session_ready {
+            return;
+        }
+        let s = self.session_snapshot();
         if let Err(e) = session::save(&s)
             && !self.session_warned
         {
