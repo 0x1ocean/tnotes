@@ -235,3 +235,40 @@ impl Binding {
 pub fn in_scope(scope: Scope) -> impl Iterator<Item = &'static Binding> {
     BINDINGS.iter().filter(move |b| b.scope == scope)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lookup_matches_global_chords_only() {
+        let ev = |code, mods| KeyEvent::new(code, mods);
+        assert_eq!(
+            lookup(&ev(KeyCode::Char('t'), KeyModifiers::CONTROL)),
+            Some(Action::NewNote)
+        );
+        assert_eq!(
+            lookup(&ev(KeyCode::Char('.'), KeyModifiers::ALT)),
+            Some(Action::NextTab)
+        );
+        assert_eq!(lookup(&ev(KeyCode::Char('t'), KeyModifiers::NONE)), None);
+        assert_eq!(
+            lookup(&ev(KeyCode::PageDown, KeyModifiers::CONTROL)),
+            Some(Action::NextTab)
+        );
+        // Shift is not part of a chord: `F2` with Shift still opens settings.
+        assert_eq!(
+            lookup(&ev(KeyCode::F(2), KeyModifiers::SHIFT)),
+            Some(Action::Settings)
+        );
+    }
+
+    #[test]
+    fn every_global_binding_has_a_chord() {
+        assert!(
+            in_scope(Scope::Global)
+                .filter(|b| b.action != Action::Doc)
+                .all(|b| !b.chords.is_empty())
+        );
+    }
+}

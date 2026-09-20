@@ -264,3 +264,67 @@ pub fn highlights(lines: &Lines) -> Vec<Highlight> {
 pub fn refresh(editor: &mut EditorState) {
     editor.highlights = highlights(&editor.lines);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chars(s: &str) -> Vec<char> {
+        s.chars().collect()
+    }
+
+    #[test]
+    fn list_line_parses_markers_and_checkboxes() {
+        let l = list_line(&chars("  - [x] done")).unwrap();
+        assert_eq!(l.indent, 2);
+        assert_eq!(l.marker, "- ");
+        assert_eq!(l.checkbox, Some(4));
+        assert!(l.done);
+        assert_eq!(l.text_start, 8);
+
+        let l = list_line(&chars("3. third")).unwrap();
+        assert_eq!(l.marker, "3. ");
+        assert_eq!(l.checkbox, None);
+        assert_eq!(l.text_start, 3);
+
+        assert!(list_line(&chars("-x")).is_none());
+        assert_eq!(list_line(&chars("- ")).unwrap().text_start, 2);
+    }
+
+    #[test]
+    fn next_marker_increments_numbers_and_keeps_checkboxes() {
+        assert_eq!(next_marker(&list_line(&chars("3. ")).unwrap()), "4. ");
+        assert_eq!(
+            next_marker(&list_line(&chars("  - [ ] a")).unwrap()),
+            "  - [ ] "
+        );
+    }
+
+    #[test]
+    fn tag_at_finds_tags_under_the_cursor() {
+        let l = chars("see #work/x and #123");
+        assert_eq!(tag_at(&l, 5).as_deref(), Some("work/x"));
+        assert_eq!(tag_at(&l, 16), None);
+        assert_eq!(tag_at(&l, 1), None);
+        assert_eq!(tag_at(&chars("a#b"), 2), None);
+    }
+
+    #[test]
+    fn highlights_mark_headings_tags_and_done_tasks() {
+        let lines = Lines::from("# Title #tag\n- [x] done\n");
+        let hl = highlights(&lines);
+        let at = |row, start, end| {
+            hl.iter()
+                .find(|h| h.start == Index2::new(row, start) && h.end == Index2::new(row, end))
+                .unwrap_or_else(|| panic!("no range {row}:{start}..={end}"))
+        };
+        assert_eq!(at(0, 8, 11).style.fg, Some(dim()));
+        assert!(at(0, 2, 11).style.add_modifier.contains(Modifier::BOLD));
+        assert!(
+            at(1, 0, 9)
+                .style
+                .add_modifier
+                .contains(Modifier::CROSSED_OUT)
+        );
+    }
+}
