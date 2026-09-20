@@ -78,6 +78,38 @@ pub fn tag_at(line: &[char], col: usize) -> Option<String> {
     None
 }
 
+/// `[[target]]` opening at `i`: the closing `]]` index `j` and the trimmed inner range
+/// `(start, end_inclusive)`; same acceptance rule as `note::links_of`.
+fn wikilink(line: &[char], i: usize) -> Option<(usize, usize, usize)> {
+    if line.get(i) != Some(&'[') || line.get(i + 1) != Some(&'[') {
+        return None;
+    }
+    let j =
+        (i + 2..line.len().saturating_sub(1)).find(|&j| line[j] == ']' && line[j + 1] == ']')?;
+    if line[i + 2..j].iter().any(|&c| c == '[' || c == ']') {
+        return None;
+    }
+    let start = (i + 2..j).find(|&k| !line[k].is_whitespace())?;
+    let end = (i + 2..j).rev().find(|&k| !line[k].is_whitespace())?;
+    Some((j, start, end))
+}
+
+/// `[[target]]` under column `col` → trimmed target.
+pub fn link_at(line: &[char], col: usize) -> Option<String> {
+    let mut i = 0;
+    while i + 1 < line.len() {
+        if let Some((j, start, end)) = wikilink(line, i) {
+            if (i..=j + 1).contains(&col) {
+                return Some(line[start..=end].iter().collect());
+            }
+            i = j + 2;
+            continue;
+        }
+        i += 1;
+    }
+    None
+}
+
 /// Marker for the line that follows `line` when Enter is pressed: `1. ` → `2. `.
 pub fn next_marker(l: &ListLine) -> String {
     let mut out = " ".repeat(l.indent);
@@ -129,6 +161,18 @@ fn inline(line: &[char], from: usize, s: &mut Sink) {
                 }
             }
             '[' => {
+                // [[wikilink]]
+                if let Some((j, _, _)) = wikilink(line, i) {
+                    s.push(i, i + 1, dim_s);
+                    s.push(
+                        i + 2,
+                        j - 1,
+                        Style::new().add_modifier(Modifier::UNDERLINED),
+                    );
+                    s.push(j, j + 1, dim_s);
+                    i = j + 2;
+                    continue;
+                }
                 // [text](url)
                 if let Some(close) = (i + 1..n).find(|&j| line[j] == ']')
                     && line.get(close + 1) == Some(&'(')
@@ -326,5 +370,30 @@ mod tests {
                 .add_modifier
                 .contains(Modifier::CROSSED_OUT)
         );
+    }
+
+    #[test]
+    fn link_at_finds_wikilinks() {
+        let l = chars("go [[Weekly plan]] now");
+        assert_eq!(link_at(&l, 3).as_deref(), Some("Weekly plan"));
+        assert_eq!(link_at(&l, 17).as_deref(), Some("Weekly plan"));
+        assert_eq!(link_at(&l, 18), None);
+        assert_eq!(link_at(&chars("[[]]"), 1), None);
+        assert_eq!(link_at(&chars("[[ a ]]"), 2).as_deref(), Some("a"));
+        assert_eq!(link_at(&chars("[[a[b]]"), 2), None);
+    }
+
+    #[test]
+    fn highlights_underline_wikilinks() {
+        let lines = Lines::from("see [[B]]\n");
+        let hl = highlights(&lines);
+        let at = |start, end| {
+            hl.iter()
+                .find(|h| h.start == Index2::new(0, start) && h.end == Index2::new(0, end))
+                .unwrap_or_else(|| panic!("no range {start}..={end}"))
+        };
+        assert_eq!(at(4, 5).style.fg, Some(dim()));
+        assert!(at(6, 6).style.add_modifier.contains(Modifier::UNDERLINED));
+        assert_eq!(at(7, 8).style.fg, Some(dim()));
     }
 }
