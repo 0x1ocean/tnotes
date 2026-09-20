@@ -10,6 +10,7 @@ Minimal Markdown notes in the terminal: folders, tags, tabs, live highlighting, 
 
 - Plain `.md` files on disk: atomic saves, conflict copies instead of silent overwrites, live reload when a file changes outside the app.
 - Folders are real directories; `#tags` are parsed from the text, including nested ones like `#work/project`.
+- `[[Note title]]` links: completion popup, `alt+enter` / `ctrl+click` to follow (a missing target is created), backlinks overlay, and links are rewritten when a note's title changes.
 - Tabs with a single preview tab: selecting a note previews it, editing or pressing Enter pins it.
 - Live Markdown highlighting while you type: headings, lists, checkboxes, code, links, emphasis, quotes, tags.
 - List continuation on Enter, Tab / Shift+Tab to nest items, Alt+x or a click to toggle a checkbox.
@@ -18,6 +19,7 @@ Minimal Markdown notes in the terminal: folders, tags, tabs, live highlighting, 
 - Session restore: open tabs, filter, sort, focus and folded sections come back on the next launch.
 - In-app settings page (`F2` or `,`) that writes the config file for you.
 - Five-colour theme that follows your terminal palette.
+- Headless CLI (`tnotes ls | search | cat | new | trash`, `--json`) for scripts and agents; a running TUI picks the changes up live.
 
 ## Install
 
@@ -42,6 +44,20 @@ tnotes                # open your configured roots
 tnotes ~/path         # add the folder to your roots (saved to config) and open it
 tnotes --dir ~/path   # use only this folder for the session; config roots are left untouched
 ```
+
+Headless subcommands work on the same files (`--dir` and `--json` apply to all of them):
+
+```sh
+tnotes ls [--tag work] [--folder notes/sub]      # id · title · tags, newest first
+tnotes search "milk" [--tag …] [--folder …]      # fuzzy over titles and bodies, best first
+tnotes cat weekly-plan                           # print the note
+tnotes new "Weekly plan" --tag work [--folder …] # prints the new id
+echo "body" | tnotes new "Piped" --stdin         # body below the title (or whole note without a title)
+tnotes trash weekly-plan                         # move to the root's .Trash
+tnotes ls --json                                 # id, path, title, folder, tags, links, backlinks, created, modified, preview
+```
+
+A note is addressed by its id (`root/sub/stem` as printed by `ls`), a path, or a unique file stem.
 
 The first launch asks where your notes live (default `~/Documents/notes`).
 
@@ -79,10 +95,12 @@ The in-app `?` page is the source of truth.
 | tree | switch pane | `h` / `l` |
 | editor | back to list | `esc` |
 | editor | complete tag | `#…` `tab` |
+| editor | complete link | `[[…` `tab` |
+| editor | follow [[link]] · backlinks | `alt+enter` |
 | editor | continue list · empty item ends it | `enter` |
 | editor | toggle task (or click the box) | `alt+x` |
 | editor | nest / un-nest list item | `tab` / `shift+tab` |
-| editor | #tag → filter by it | `ctrl+click` |
+| editor | #tag → filter · [[link]] → open | `ctrl+click` |
 | editor · emacs | find in note | `ctrl+s` |
 | editor · emacs | undo / redo | `ctrl+u` / `ctrl+r` |
 | editor · emacs | word back / forward | `alt+b` / `alt+f` |
