@@ -1,0 +1,144 @@
+# tnotes
+
+Minimal Markdown notes in the terminal: folders, tags, tabs, live highlighting, mouse-first.
+
+![CI](https://github.com/0x1ocean/tnotes/actions/workflows/ci.yml/badge.svg)
+
+![tnotes](docs/screenshot.png)
+
+## Features
+
+- Plain `.md` files on disk: atomic saves, conflict copies instead of silent overwrites, live reload when a file changes outside the app.
+- Folders are real directories; `#tags` are parsed from the text, including nested ones like `#work/project`.
+- Tabs with a single preview tab: selecting a note previews it, editing or pressing Enter pins it.
+- Live Markdown highlighting while you type: headings, lists, checkboxes, code, links, emphasis, quotes, tags.
+- List continuation on Enter, Tab / Shift+Tab to nest items, Alt+x or a click to toggle a checkbox.
+- Emacs or vim editing keys (powered by edtui).
+- Mouse-first: click to select, double-click to pin, right-click context menus, wheel scrolling, drag to select text; a narrow single-panel layout for small terminals.
+- Session restore: open tabs, filter, sort, focus and folded sections come back on the next launch.
+- In-app settings page (`F2` or `,`) that writes the config file for you.
+- Five-colour theme that follows your terminal palette.
+
+## Install
+
+Requires Rust ≥ 1.98.
+
+```sh
+cargo install --git https://github.com/0x1ocean/tnotes
+```
+
+or
+
+```sh
+git clone https://github.com/0x1ocean/tnotes
+cd tnotes
+cargo install --path .
+```
+
+## Usage
+
+```sh
+tnotes                # open your configured roots
+tnotes ~/path         # add the folder to your roots (saved to config) and open it
+tnotes --dir ~/path   # use only this folder for the session; config roots are left untouched
+```
+
+The first launch asks where your notes live (default `~/Documents/notes`).
+
+## Keys
+
+The in-app `?` page is the source of truth.
+
+| Scope | Action | Keys |
+|---|---|---|
+| global | new note | `ctrl+t` |
+| global | preview / edit | `ctrl+l` |
+| global | close tab | `ctrl+w` |
+| global | next tab | `alt+.` · `ctrl+x` · `ctrl+pgdn` · `alt+→` |
+| global | previous tab | `alt+,` · `ctrl+pgup` · `alt+←` |
+| global | jump to tab | `1-9` |
+| global | sidebar / panel | `ctrl+b` |
+| global | next pane | `tab` |
+| global | previous pane | `shift+tab` |
+| global | settings | `F2` |
+| global | help | `F1` |
+| global | quit | `ctrl+q` |
+| list | move | `j/k` `↑/↓` |
+| list | edit (pins the tab) | `enter` / `l` |
+| list | search | `/` |
+| list | trash (in trash: delete) | `d` |
+| list | undo trash | `u` |
+| list | restore (trash) | `r` |
+| list | move to folder | `m` |
+| list | sort | `s` |
+| list | top / bottom | `gg` / `G` |
+| list | help / settings | `?` `,` |
+| tree | filter | `enter` |
+| tree | fold | `space` |
+| tree | new / rename / delete folder | `N` / `R` / `D` |
+| tree | switch pane | `h` / `l` |
+| editor | back to list | `esc` |
+| editor | complete tag | `#…` `tab` |
+| editor | continue list · empty item ends it | `enter` |
+| editor | toggle task (or click the box) | `alt+x` |
+| editor | nest / un-nest list item | `tab` / `shift+tab` |
+| editor | #tag → filter by it | `ctrl+click` |
+| editor · emacs | find in note | `ctrl+s` |
+| editor · emacs | undo / redo | `ctrl+u` / `ctrl+r` |
+| editor · emacs | word back / forward | `alt+b` / `alt+f` |
+| editor · vim | insert | `i` `a` `I` `A` `o` `O` |
+| editor · vim | normal · then back to list | `esc` |
+| editor · vim | undo / redo / repeat | `u` · `ctrl+r` · `.` |
+| editor · vim | search | `/` `n` `N` |
+| mouse | click / double-click | select · pin |
+| mouse | right-click | context menu |
+| mouse | wheel / drag | scroll · select text |
+
+## Configuration
+
+`~/.config/tnotes/config.toml` — every key with its default:
+
+```toml
+roots = ["~/Documents/notes"]
+
+[appearance]
+compact = false          # one-line list items instead of title + preview
+dates = "relative"       # relative | absolute
+counts = true            # note counts on the right of tree rows
+sidebar_width = 32       # 24..=48
+tab_numbers = "always"   # always | multi (only when 2+ tabs)
+
+[editor]
+keys = "emacs"           # emacs | vim
+autosave_ms = 500        # idle time before a dirty tab is written; 200..=3000
+template = "# "          # initial text of a new note; cursor lands at the end of the first line
+wrap = true
+width = 72               # max text column width in cells; 0 = full editor width
+align = "left"           # left | center
+cursor = "drawn"         # drawn (painted by the editor) | bar | underline | block (terminal cursor)
+blink = false
+
+[theme]                  # colour names (cyan, darkgray, #rrggbb, ...); unset keys keep the defaults
+accent = "cyan"
+dim = "darkgray"
+warn = "yellow"
+err = "red"
+ok = "green"
+```
+
+Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/state.toml`.
+
+## How files are stored
+
+- One `.md` file per note; the filename is a slug of the first line (the title), and it is renamed when the title changes.
+- Folders in the tree are directories on disk. Every root has its own `.Trash/` that mirrors the folder layout, so trashed notes can be restored to where they came from.
+- Dot-prefixed files and directories are ignored.
+- Nothing else is written next to your notes, so the folder is safe to sync with git, Syncthing or any file sync.
+
+## Vendored edtui
+
+`vendor/edtui` is [edtui](https://github.com/preiter93/edtui) 0.11.7 (MIT, Philipp Reiter) with a word-wrap patch in `src/view/line_wrapper.rs`; upstream wraps by character only. It is pulled in through `[patch.crates-io]` in `Cargo.toml`.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
