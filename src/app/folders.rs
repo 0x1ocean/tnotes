@@ -5,7 +5,6 @@ use super::*;
 impl App {
     pub(super) fn prompt_new_folder(&mut self, dir: PathBuf) {
         self.prompt = single_line("");
-        self.prompt_candidates.clear();
         self.overlay = Overlay::Prompt(PromptKind::NewFolder(dir));
     }
 
@@ -18,7 +17,6 @@ impl App {
             return;
         }
         self.prompt = single_line(&file_name(&dir));
-        self.prompt_candidates.clear();
         self.overlay = Overlay::Prompt(PromptKind::RenameFolder(dir));
     }
 
@@ -82,6 +80,9 @@ impl App {
                 for i in 0..self.tabs.len() {
                     if self.tabs[i].path.starts_with(&dir) {
                         self.save_tab(i);
+                        if self.tabs[i].dirty {
+                            return; // a save failed; do not delete what holds unsaved text
+                        }
                     }
                 }
                 match self.store.delete_folder(&dir) {

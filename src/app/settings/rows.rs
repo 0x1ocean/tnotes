@@ -322,7 +322,6 @@ impl App {
             SettingKind::Number(_) => self.step_number(row.id, delta),
             SettingKind::Text(_) => {
                 self.prompt = single_line(&self.cfg.editor.template.replace('\n', "\\n"));
-                self.prompt_candidates.clear();
                 self.overlay = Overlay::Prompt(PromptKind::Template);
             }
             SettingKind::Action => self.prompt_add_root(),

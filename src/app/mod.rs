@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Receiver;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use edtui::actions::{
@@ -58,8 +58,6 @@ const STATUS_TTL: Duration = Duration::from_secs(3);
 const UNDO_TRASH_WINDOW: Duration = Duration::from_secs(5);
 const WHEEL_STEP: usize = 3;
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
-/// A note removed while a sibling was written this recently is treated as a rename.
-const RENAME_WINDOW: Duration = Duration::from_secs(2);
 const TAG_POPUP_MAX: usize = 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -208,12 +206,11 @@ pub struct App {
     pub tabs: Vec<Tab>,
     pub active: usize,
     editor_handler: EditorEventHandler,
-    /// Key scheme the running editor handler uses (config edits apply on next launch).
+    /// Key scheme the running editor handler uses; switched live by the settings page.
     pub keys: EditorKeys,
     pub sort: SortMode,
     pub popup: Option<Popup>,
     pub prompt: EditorState,
-    pub prompt_candidates: Vec<String>,
     pub picker_query: EditorState,
     pub picker_sel: usize,
     pub picker_rows: Vec<PathBuf>,
@@ -239,6 +236,8 @@ pub struct App {
     pub hits: Hits,
     watch_rx: Receiver<PathBuf>,
     watchers: Vec<RecommendedWatcher>,
+    /// Files that appeared in the watcher batch being handled (see `on_external_batch`).
+    batch_added: Vec<PathBuf>,
     pending_g: bool,
     /// Last list-row click `(row, when)` for double-click detection.
     last_click: Option<(usize, Instant)>,
@@ -318,7 +317,6 @@ impl App {
             sort: SortMode::default(),
             popup: None,
             prompt: single_line(""),
-            prompt_candidates: Vec::new(),
             picker_query: single_line(""),
             picker_sel: 0,
             picker_rows: Vec::new(),
@@ -338,6 +336,7 @@ impl App {
             hits: Hits::default(),
             watch_rx,
             watchers,
+            batch_added: Vec::new(),
             pending_g: false,
             last_click: None,
             session_ready: false,
@@ -372,12 +371,8 @@ impl App {
             while let Ok(p) = self.watch_rx.try_recv() {
                 changed.insert(p);
             }
-            // Paths that still exist first, so a rename's new file is known before the old
-            // path is handled (`on_external` retargets the tab).
-            let mut changed: Vec<PathBuf> = changed.into_iter().collect();
-            changed.sort_by_key(|p| !p.exists());
-            for p in changed {
-                self.on_external(p);
+            if !changed.is_empty() {
+                self.on_external_batch(changed.into_iter().collect());
             }
             for i in 0..self.tabs.len() {
                 if self.tabs[i].dirty
@@ -396,7 +391,38 @@ impl App {
             let _ = execute!(std::io::stdout(), SetCursorStyle::DefaultUserShape);
         }
         self.persist_session();
-        Ok(())
+        self.rescue_unsaved()
+    }
+
+    /// Tabs still dirty after the final save (disk full, permissions…): write their text
+    /// under the state directory and report it, so quitting never loses a note.
+    fn rescue_unsaved(&self) -> Result<()> {
+        let dirty: Vec<&Tab> = self.tabs.iter().filter(|t| t.dirty).collect();
+        if dirty.is_empty() {
+            return Ok(());
+        }
+        let dir = session::path()
+            .and_then(|p| p.parent().map(|d| d.join("unsaved")))
+            .unwrap_or_else(std::env::temp_dir);
+        std::fs::create_dir_all(&dir)?;
+        let stamp = chrono::Local::now().format("%Y-%m-%dT%H-%M-%S");
+        let mut saved = Vec::new();
+        for t in dirty {
+            let stem = t
+                .path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("note");
+            let p = dir.join(format!("{stem}-{stamp}.md"));
+            std::fs::write(&p, t.editor.lines.to_string())?;
+            saved.push(p);
+        }
+        let list: Vec<String> = saved.iter().map(|p| p.display().to_string()).collect();
+        anyhow::bail!(
+            "{} note(s) could not be saved; text kept in:\n  {}",
+            list.len(),
+            list.join("\n  ")
+        )
     }
 
     /// Terminal cursor shape for the current state: `None` = the editor paints its own.

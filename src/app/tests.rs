@@ -442,11 +442,44 @@ fn external_rename_retargets_a_clean_tab() {
     open_pinned(app, "a.md");
     fs::rename(&a, &b).unwrap();
     fs::write(&b, "# B\n").unwrap();
-    // The run loop hands existing paths over first.
-    app.on_external(b.clone());
-    app.on_external(a.clone());
+    app.on_external_batch(vec![a.clone(), b.clone()]);
     assert_eq!(app.tabs.len(), 1);
     assert_eq!(app.tabs[0].path, b);
     assert_eq!(line(app, 0), "# B");
     assert!(!app.tabs[0].dirty);
+
+    // A file that merely appeared in an earlier batch is not a rename target.
+    fs::write(f.dir.join("c.md"), "# C\n").unwrap();
+    app.on_external_batch(vec![f.dir.join("c.md")]);
+    fs::remove_file(&b).unwrap();
+    app.on_external_batch(vec![b.clone()]);
+    assert!(app.tabs.is_empty());
+}
+
+#[test]
+fn external_rename_of_a_dirty_tab_keeps_the_edits_as_a_conflict_copy() {
+    let mut f = fixture(&[("a.md", "# A\n")]);
+    let (a, b) = (f.dir.join("a.md"), f.dir.join("b.md"));
+    let app = &mut f.app;
+    open_pinned(app, "a.md");
+    app.tabs[0].editor.cursor = Index2::new(0, 3);
+    type_str(app, "x");
+    fs::rename(&a, &b).unwrap();
+    fs::write(&b, "# B\n").unwrap();
+    app.on_external_batch(vec![a.clone(), b.clone()]);
+    assert_eq!(app.tabs[0].path, b);
+    assert_eq!(line(app, 0), "# B");
+    assert!(!app.tabs[0].dirty);
+    let copies: Vec<_> = fs::read_dir(&f.dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.contains("conflict"))
+        .collect();
+    assert_eq!(copies.len(), 1);
+    assert_eq!(
+        fs::read_to_string(f.dir.join(&copies[0])).unwrap(),
+        "# Ax\n"
+    );
+    assert!(app.status.as_ref().unwrap().text.contains("conflict"));
 }

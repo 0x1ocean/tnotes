@@ -25,6 +25,7 @@ impl App {
     /// Overlay listing the notes that link to `path`.
     pub(super) fn open_backlinks(&mut self, path: PathBuf) {
         let Some(idx) = self.store.notes.iter().position(|n| n.path == path) else {
+            self.set_status(StatusKind::Info, "no backlinks".into());
             return;
         };
         let rows: Vec<PathBuf> = self
@@ -111,12 +112,7 @@ impl App {
             if after == before {
                 continue;
             }
-            let cur = tab.editor.cursor;
-            tab.editor.lines = Lines::from(after.as_str());
-            let row = cur.row.min(tab.editor.lines.len().saturating_sub(1));
-            let col = cur.col.min(tab.editor.lines.len_col(row).unwrap_or(0));
-            tab.editor.cursor = Index2::new(row, col);
-            markdown::refresh(&mut tab.editor);
+            Self::set_lines(&mut tab.editor, &after);
             n += 1;
         }
         if n > 0 {

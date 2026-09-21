@@ -78,7 +78,7 @@ pub(super) fn list(
     limit: Option<usize>,
 ) -> Result<Vec<usize>> {
     let filter = tag
-        .map(|t| Filter::Tag(t.to_lowercase()))
+        .map(|t| Filter::Tag(t.trim().trim_start_matches('#').to_lowercase()))
         .unwrap_or(Filter::All);
     let mut matcher = Matcher::new(nucleo_matcher::Config::DEFAULT);
     let mut idx = index::visible(&store.notes, &filter, query, &mut matcher);

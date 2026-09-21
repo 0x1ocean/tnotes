@@ -113,7 +113,7 @@ impl App {
         let editable_roots = folders && !self.cfg.roots_fixed;
         match k.code {
             KeyCode::Esc | KeyCode::F(2) => self.close_settings(),
-            KeyCode::Char('q') if k.modifiers.contains(KeyModifiers::CONTROL) => {
+            _ if keymap::lookup(&k) == Some(keymap::Action::Quit) => {
                 self.close_settings();
                 self.quit = true;
             }

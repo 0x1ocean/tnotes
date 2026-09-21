@@ -7,6 +7,8 @@ impl App {
         match ev {
             Event::Key(k) if k.kind != KeyEventKind::Release => self.on_key(k),
             Event::Mouse(m) => self.on_mouse(m),
+            // The settings page has no text field; a paste there must not reach the hidden editor.
+            Event::Paste(_) if self.settings.is_some() => {}
             Event::Paste(text) => match &self.overlay {
                 Overlay::Prompt(_) => {
                     self.query_handler.on_paste_event(text, &mut self.prompt);
@@ -68,11 +70,7 @@ impl App {
                         };
                     }
                     KeyCode::Enter => self.submit_prompt(kind),
-                    KeyCode::Tab => {}
-                    _ => {
-                        self.query_handler.on_event(Event::Key(k), &mut self.prompt);
-                        self.prompt_candidates.clear();
-                    }
+                    _ => self.query_handler.on_event(Event::Key(k), &mut self.prompt),
                 }
             }
             Overlay::Picker(note) => match (k.code, ctrl) {

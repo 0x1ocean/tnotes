@@ -44,7 +44,7 @@ pub(super) fn draw_confirm(
     f.render_widget(
         Span::raw(format!(
             " {}",
-            truncate(&question, inner.width as usize - 2)
+            truncate(&question, (inner.width as usize).saturating_sub(2))
         )),
         Rect::new(inner.x, inner.y, inner.width, 1),
     );
@@ -57,8 +57,8 @@ pub(super) fn draw_confirm(
         yes_rect,
     );
     f.render_widget(Span::styled(no, Style::new().bg(dim())), no_rect);
-    hits.overlay_rows.push(yes_rect);
-    hits.overlay_rows.push(no_rect);
+    hits.overlay_rows.push((0, yes_rect));
+    hits.overlay_rows.push((1, no_rect));
 }
 
 pub(super) fn draw_prompt(
@@ -79,8 +79,7 @@ pub(super) fn draw_prompt(
         PromptKind::NewRoot(p) => format!(" new folder in {} ", config::contract_tilde(p)),
         PromptKind::Template => " new note template (\\n for newline) ".to_string(),
     };
-    let has_cands = !app.prompt_candidates.is_empty();
-    let rect = centered(area, 60, if has_cands { 4 } else { 3 });
+    let rect = centered(area, 60, 3);
     f.render_widget(Clear, rect);
     let block = overlay_block(title, " enter ok · esc cancel ".into());
     let inner = block.inner(rect);
@@ -91,13 +90,6 @@ pub(super) fn draw_prompt(
     }
     let field = Rect::new(inner.x + 1, inner.y, inner.width - 2, 1);
     render_field(f, &mut app.prompt, field);
-    if has_cands && inner.height > 1 {
-        let text = truncate(&app.prompt_candidates.join("  "), inner.width as usize - 2);
-        f.render_widget(
-            Span::styled(format!(" {text}"), Style::new().fg(dim())),
-            Rect::new(inner.x, inner.y + 1, inner.width, 1),
-        );
-    }
 }
 
 pub(super) fn draw_picker(
@@ -147,11 +139,9 @@ pub(super) fn draw_picker(
         } else {
             lines.push(Line::from(Span::raw(format!("  {label}"))));
         }
-        hits.overlay_rows.push(Rect::new(
-            body.x,
-            body.y + (i - offset) as u16,
-            body.width,
-            1,
+        hits.overlay_rows.push((
+            i,
+            Rect::new(body.x, body.y + (i - offset) as u16, body.width, 1),
         ));
     }
     if app.picker_rows.is_empty() {
@@ -217,11 +207,9 @@ pub(super) fn draw_backlinks(
             Span::styled(label, style),
             Span::styled(format!("  {folder}"), Style::new().fg(dim())),
         ]));
-        hits.overlay_rows.push(Rect::new(
-            inner.x,
-            inner.y + (i - offset) as u16,
-            inner.width,
-            1,
+        hits.overlay_rows.push((
+            i,
+            Rect::new(inner.x, inner.y + (i - offset) as u16, inner.width, 1),
         ));
     }
     f.render_widget(Paragraph::new(lines), inner);
@@ -290,7 +278,7 @@ pub(super) fn draw_menu(f: &mut Frame, area: Rect, menu: &Menu, hits: &mut Hits)
                 spans.push(Span::styled(format!("{key:>3} "), key_style));
             }
             hits.overlay_rows
-                .push(Rect::new(inner.x, inner.y + i as u16, inner.width, 1));
+                .push((i, Rect::new(inner.x, inner.y + i as u16, inner.width, 1)));
             Line::from(spans)
         })
         .collect();
@@ -428,11 +416,9 @@ pub(super) fn draw_browser(f: &mut Frame, app: &mut App, area: Rect, hits: &mut 
             ]),
         };
         lines.push(line);
-        hits.overlay_rows.push(Rect::new(
-            body.x,
-            body.y + (i - offset) as u16,
-            body.width,
-            1,
+        hits.overlay_rows.push((
+            i,
+            Rect::new(body.x, body.y + (i - offset) as u16, body.width, 1),
         ));
     }
     f.render_widget(Paragraph::new(lines), body);

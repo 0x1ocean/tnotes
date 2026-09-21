@@ -2,14 +2,31 @@
 
 use super::*;
 
+/// `dir/stem (conflict <stamp>).md` next to `path`.
+fn conflict_path(path: &Path) -> PathBuf {
+    let stamp = chrono::Local::now().format("%Y-%m-%dT%H-%M-%S");
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("note");
+    path.with_file_name(format!("{stem} (conflict {stamp}).md"))
+}
+
 impl App {
+    /// Handle one batch of watcher events. Paths that still exist go first so a rename's new
+    /// file is in the store before the old path is handled; `batch_added` remembers what
+    /// appeared in this batch so `renamed_to` matches only genuinely new files.
+    pub(super) fn on_external_batch(&mut self, mut paths: Vec<PathBuf>) {
+        paths.sort_by_key(|p| !p.exists());
+        self.batch_added.clear();
+        for p in paths {
+            self.on_external(p);
+        }
+    }
+
     pub(super) fn on_external(&mut self, path: PathBuf) {
         let tab_i = self.tabs.iter().position(|t| t.path == path);
         let dirty = tab_i.is_some_and(|i| self.tabs[i].dirty);
         if dirty && path.exists() {
             return; // the pending save will detect the conflict
         }
-        let created = self.note_by_path(&path).map(|(n, _)| n.created);
         let outcome = self.store.reload_path(&path);
         match outcome {
             Reload::Ignored => return,
@@ -45,59 +62,81 @@ impl App {
             }
             Reload::Removed => {
                 if let Some(i) = tab_i {
-                    if self.tabs[i].dirty {
-                        let text = self.tabs[i].editor.lines.to_string();
-                        match self.store.create_at(&path, &text) {
-                            Ok(_) => {
-                                self.tabs[i].dirty = false;
-                                self.set_status(
-                                    StatusKind::Reloaded,
-                                    format!("re-created {}", file_name(&path)),
-                                );
-                            }
-                            Err(e) => self.fail("re-create", e),
+                    let new = self.renamed_to(&path);
+                    match (self.tabs[i].dirty, new) {
+                        (false, Some(new)) => {
+                            // A rename (e.g. `tnotes write` changing the title): follow it.
+                            let text = self
+                                .note_by_path(&new)
+                                .map(|(n, _)| n.text.clone())
+                                .unwrap_or_default();
+                            self.tabs[i].path = new.clone();
+                            self.reload_tab(i, &text);
+                            self.set_status(
+                                StatusKind::Reloaded,
+                                format!("renamed to {}", file_name(&new)),
+                            );
+                            self.persist_session();
                         }
-                    } else if let Some(new) = created.and_then(|c| self.renamed_to(&path, c)) {
-                        // A rename (e.g. `tnotes write` changing the title): follow it.
-                        let text = self
-                            .note_by_path(&new)
-                            .map(|(n, _)| n.text.clone())
-                            .unwrap_or_default();
-                        self.tabs[i].path = new.clone();
-                        self.reload_tab(i, &text);
-                        self.set_status(
-                            StatusKind::Reloaded,
-                            format!("renamed to {}", file_name(&new)),
-                        );
-                        self.persist_session();
-                    } else {
-                        self.close_tab(i);
+                        (true, Some(new)) => {
+                            // The rename wins; the unsaved text becomes a conflict copy.
+                            let text = self.tabs[i].editor.lines.to_string();
+                            let copy = conflict_path(&new);
+                            match self.store.create_at(&copy, &text) {
+                                Ok(_) => {
+                                    let disk = self
+                                        .note_by_path(&new)
+                                        .map(|(n, _)| n.text.clone())
+                                        .unwrap_or_default();
+                                    self.tabs[i].path = new.clone();
+                                    self.reload_tab(i, &disk);
+                                    self.set_status(
+                                        StatusKind::Conflict,
+                                        format!("conflict — saved as {}", file_name(&copy)),
+                                    );
+                                    self.persist_session();
+                                }
+                                Err(e) => self.fail("save conflict copy", e),
+                            }
+                        }
+                        (true, None) => {
+                            let text = self.tabs[i].editor.lines.to_string();
+                            match self.store.create_at(&path, &text) {
+                                Ok(_) => {
+                                    self.tabs[i].dirty = false;
+                                    self.set_status(
+                                        StatusKind::Reloaded,
+                                        format!("re-created {}", file_name(&path)),
+                                    );
+                                }
+                                Err(e) => self.fail("re-create", e),
+                            }
+                        }
+                        (false, None) => self.close_tab(i),
                     }
                 }
             }
-            Reload::Added => {}
+            Reload::Added => self.batch_added.push(path.clone()),
         }
         self.refresh();
     }
 
-    /// The note `old` was renamed to: a sibling no tab shows yet that either kept the birth
-    /// time (plain `mv`) or was written within the last two seconds (`tnotes write`, which
-    /// saves through a temp file and so gets a new inode).
-    fn renamed_to(&self, old: &Path, created: SystemTime) -> Option<PathBuf> {
-        let now = SystemTime::now();
-        let fresh = |t: SystemTime| now.duration_since(t).is_ok_and(|d| d < RENAME_WINDOW);
-        self.store
-            .notes
+    /// The note `old` was renamed to: a file that appeared in the same watcher batch, in the
+    /// same folder, and that no tab shows yet.
+    fn renamed_to(&self, old: &Path) -> Option<PathBuf> {
+        self.batch_added
             .iter()
-            .filter(|n| n.path != old && n.path.parent() == old.parent())
-            .filter(|n| n.created == created || fresh(n.modified))
-            .filter(|n| !self.tabs.iter().any(|t| t.path == n.path))
-            .map(|n| n.path.clone())
-            .next()
+            .filter(|p| p.as_path() != old && p.parent() == old.parent())
+            .filter(|p| self.note_by_path(p).is_some())
+            .find(|p| !self.tabs.iter().any(|t| &t.path == *p))
+            .cloned()
     }
 
     pub(super) fn reload_store(&mut self) {
         self.save_all_tabs();
+        if self.tabs.iter().any(|t| t.dirty) {
+            return; // a save failed; reloading would drop that text
+        }
         match Store::load(&self.cfg.roots) {
             Ok(s) => self.store = s,
             Err(e) => {

@@ -129,7 +129,7 @@ pub const BINDINGS: &[Binding] = &[
             alt(KeyCode::Left),
         ],
     ),
-    doc(Global, "1-9", "jump to tab"),
+    doc(Global, "1-9", "jump to tab (outside the editor)"),
     bind(
         Global,
         Action::ToggleSidebar,

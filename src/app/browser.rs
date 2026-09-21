@@ -258,7 +258,6 @@ impl App {
             }
             DirRow::NewFolder => {
                 self.prompt = single_line("");
-                self.prompt_candidates.clear();
                 self.overlay = Overlay::Prompt(PromptKind::NewRoot(self.browser.dir.clone()));
             }
         }
@@ -332,8 +331,7 @@ impl App {
                     if let Some(p) = self.browser.crumbs.get(i).cloned() {
                         self.browser_go(p);
                     }
-                } else if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos))
-                {
+                } else if let Some(i) = self.hits.overlay_row(pos) {
                     self.browser_run(i);
                 } else if !self.hits.overlay.contains(pos) {
                     self.close_browser();

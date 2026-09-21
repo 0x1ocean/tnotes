@@ -73,6 +73,9 @@ impl App {
     pub(super) fn trash_path(&mut self, mut path: PathBuf) {
         if let Some(i) = self.tabs.iter().position(|t| t.path == path) {
             self.save_tab(i);
+            if self.tabs[i].dirty {
+                return; // the save failed (status already set); keep the text where it is
+            }
             // Saving may have renamed the file after a title change.
             path = self.tabs[i].path.clone();
         }

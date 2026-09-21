@@ -276,6 +276,11 @@ pub fn load(cli_dir: Option<PathBuf>) -> Result<Config> {
     editor.autosave_ms = editor
         .autosave_ms
         .clamp(*AUTOSAVE_RANGE.start(), *AUTOSAVE_RANGE.end());
+    if editor.width != 0 {
+        editor.width = editor
+            .width
+            .clamp(*TEXT_WIDTH_RANGE.start(), *TEXT_WIDTH_RANGE.end());
+    }
     Ok(Config {
         roots,
         roots_fixed,

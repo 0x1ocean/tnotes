@@ -120,9 +120,20 @@ pub struct Hits {
     /// Narrow layout: fold header above the tree.
     pub tree_header: Rect,
     pub overlay: Rect,
-    pub overlay_rows: Vec<Rect>,
+    /// `(absolute row index, rect)`: overlay lists scroll, so the index is stored explicitly.
+    pub overlay_rows: Vec<(usize, Rect)>,
     /// Folder browser breadcrumb segments.
     pub crumbs: Vec<Rect>,
+}
+
+impl Hits {
+    /// Absolute index of the overlay row under `pos`.
+    pub fn overlay_row(&self, pos: ratatui::layout::Position) -> Option<usize> {
+        self.overlay_rows
+            .iter()
+            .find(|(_, r)| r.contains(pos))
+            .map(|(i, _)| *i)
+    }
 }
 
 /// Screen column of the fold glyph for a tree row at `depth` inside the tree rect.

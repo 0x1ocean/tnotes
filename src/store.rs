@@ -296,9 +296,8 @@ impl Store {
         let created = note.created;
         let target = free_path(&dir, &slug_of(&title_of(new_text)), Some(&old_path));
         write_atomic(&target, new_text)?;
-        if target != old_path && old_path.exists() {
-            fs::remove_file(&old_path)?;
-        }
+        // The store follows the new file before the old one is removed, so a failed removal
+        // leaves a stale duplicate on disk rather than a store that keeps re-renaming.
         self.notes[idx] = Note::from_text(
             root,
             target.clone(),
@@ -306,6 +305,9 @@ impl Store {
             mtime(&target)?,
             created,
         );
+        if target != old_path && old_path.exists() {
+            fs::remove_file(&old_path)?;
+        }
         Ok(SaveOutcome::Saved)
     }
 

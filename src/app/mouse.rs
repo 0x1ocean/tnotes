@@ -193,7 +193,7 @@ impl App {
             Overlay::Confirm(action) => {
                 if down {
                     // Row 0 is `yes`, row 1 is `no`; anything else cancels.
-                    let hit = self.hits.overlay_rows.iter().position(|r| r.contains(pos));
+                    let hit = self.hits.overlay_row(pos);
                     self.overlay = Overlay::None;
                     if hit == Some(0) {
                         self.run_confirm(action);
@@ -209,7 +209,7 @@ impl App {
                 if !down {
                     return;
                 }
-                if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                if let Some(i) = self.hits.overlay_row(pos) {
                     if self.picker_sel == i {
                         self.submit_picker(note);
                     } else {
@@ -223,7 +223,7 @@ impl App {
                 if !down {
                     return;
                 }
-                if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                if let Some(i) = self.hits.overlay_row(pos) {
                     self.open_backlink(i);
                 } else if !self.hits.overlay.contains(pos) {
                     self.overlay = Overlay::None;
@@ -231,7 +231,7 @@ impl App {
             }
             Overlay::Menu(menu) => match m.kind {
                 MouseEventKind::Down(MouseButton::Left) => {
-                    if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                    if let Some(i) = self.hits.overlay_row(pos) {
                         self.run_menu(menu.items[i].action.clone());
                     } else {
                         self.overlay = Overlay::None;
@@ -242,7 +242,7 @@ impl App {
                     self.open_menu(pos);
                 }
                 MouseEventKind::Moved => {
-                    if let Some(i) = self.hits.overlay_rows.iter().position(|r| r.contains(pos)) {
+                    if let Some(i) = self.hits.overlay_row(pos) {
                         let mut menu = menu;
                         menu.sel = i;
                         self.overlay = Overlay::Menu(menu);
