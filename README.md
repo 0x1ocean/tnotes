@@ -23,30 +23,35 @@
 
 ## Install
 
-Requires Rust ≥ 1.98.
+**Homebrew** (macOS Apple Silicon/Intel, Linux x86_64/aarch64 — prebuilt, no Rust needed):
 
 ```sh
-brew install 0x1ocean/tnotes/tnotes   # macOS and Linux, prebuilt binaries
-cargo install tnotes                   # any platform with Rust ≥ 1.98
+brew install 0x1ocean/tnotes/tnotes
+brew upgrade tnotes        # later
 ```
 
-or from git:
+**Cargo** (any platform, Rust ≥ 1.98):
 
 ```sh
-cargo install --git https://github.com/0x1ocean/tnotes
+cargo install tnotes
+cargo install tnotes --force   # upgrade
 ```
 
-Prebuilt binaries are attached to each [release](https://github.com/0x1ocean/tnotes/releases) for Linux (x86_64 glibc and musl, aarch64) and macOS (Apple Silicon and Intel):
+**Prebuilt tarball** from a [release](https://github.com/0x1ocean/tnotes/releases) — targets `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl` (static, any distro), `aarch64-unknown-linux-gnu`; each has a `.sha256` next to it:
 
 ```sh
-# pick your target: x86_64-unknown-linux-gnu · x86_64-unknown-linux-musl · aarch64-unknown-linux-gnu
-#                   aarch64-apple-darwin · x86_64-apple-darwin
 V=1.3.0; T=aarch64-apple-darwin
 curl -sL https://github.com/0x1ocean/tnotes/releases/download/v$V/tnotes-$V-$T.tar.gz | tar xz
 install tnotes-$V-$T/tnotes ~/.local/bin/
 ```
 
-Each tarball has a `.sha256` next to it. The binaries are not signed; on macOS a download through the browser is quarantined by Gatekeeper, `curl` is not.
+**From source:**
+
+```sh
+cargo install --git https://github.com/0x1ocean/tnotes
+```
+
+The binaries are not signed. On macOS, Homebrew and `curl` downloads run as-is; a tarball saved through the browser is quarantined by Gatekeeper (`xattr -d com.apple.quarantine tnotes` clears it). Windows is untested.
 
 ## Usage
 
