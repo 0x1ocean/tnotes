@@ -35,7 +35,16 @@ or from git:
 cargo install --git https://github.com/0x1ocean/tnotes
 ```
 
-Prebuilt Linux x86_64 binaries are attached to each [release](https://github.com/0x1ocean/tnotes/releases).
+Prebuilt binaries are attached to each [release](https://github.com/0x1ocean/tnotes/releases) for Linux (x86_64 glibc and musl, aarch64) and macOS (Apple Silicon and Intel):
+
+```sh
+# pick your target: x86_64-unknown-linux-gnu · x86_64-unknown-linux-musl · aarch64-unknown-linux-gnu
+#                   aarch64-apple-darwin · x86_64-apple-darwin
+curl -sL https://github.com/0x1ocean/tnotes/releases/latest/download/tnotes-1.2.0-aarch64-apple-darwin.tar.gz | tar xz
+install tnotes-1.2.0-aarch64-apple-darwin/tnotes ~/.local/bin/
+```
+
+The binaries are not signed; on macOS a download through the browser is quarantined by Gatekeeper, `curl` is not.
 
 ## Usage
 
@@ -128,7 +137,7 @@ The in-app `?` page is the source of truth.
 
 ## Configuration
 
-`~/.config/tnotes/config.toml` — every key with its default:
+`~/.config/tnotes/config.toml` (macOS: `~/Library/Application Support/tnotes/config.toml`) — every key with its default:
 
 ```toml
 roots = ["~/Documents/notes"]
@@ -176,7 +185,7 @@ Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/s
 1. Move the `[Unreleased]` items in `CHANGELOG.md` under a new `## [X.Y.Z] - YYYY-MM-DD` heading and bump `version` in `Cargo.toml` (and `vendor/edtui/Cargo.toml` if the fork changed).
 2. `git tag vX.Y.Z && git push origin main vX.Y.Z`.
 
-The `Release` workflow checks that the tag matches `Cargo.toml`, runs the test suite, attaches a Linux x86_64 binary to a GitHub release whose notes are that changelog section, and publishes `edtui-tnotes` (when its version is new) and `tnotes` to crates.io.
+The `Release` workflow checks that the tag matches `Cargo.toml`, runs the test suite, attaches Linux and macOS tarballs to a GitHub release whose notes are that changelog section, and publishes `edtui-tnotes` (when its version is new) and `tnotes` to crates.io.
 
 ## License
 

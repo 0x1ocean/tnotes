@@ -4,6 +4,10 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+### Added
+
+- Prebuilt release tarballs for Linux x86_64 (glibc, musl), Linux aarch64, and macOS (Apple Silicon, Intel), with SHA-256 sums.
+
 ## [1.2.0] - 2026-09-21
 
 ### Added
