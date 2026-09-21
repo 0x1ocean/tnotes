@@ -2,13 +2,18 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Manual run on any ref: rebuilds and re-uploads the assets of the version in Cargo.toml.
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  # Gate: the tag matches Cargo.toml, the suite is green, the GitHub release exists.
+  check:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,18 +24,21 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Tag must match Cargo.toml version
+        id: version
         run: |
           set -eu
           version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="tnotes") | .version')
-          tag=${GITHUB_REF_NAME#v}
-          [ "$tag" = "$version" ] || { echo "tag v$tag != Cargo.toml $version"; exit 1; }
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            tag=${GITHUB_REF_NAME#v}
+            [ "$tag" = "$version" ] || { echo "tag v$tag != Cargo.toml $version"; exit 1; }
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
       - run: cargo test --manifest-path vendor/edtui/Cargo.toml --lib
-      - run: cargo build --release
 
       - name: Release notes from CHANGELOG.md
         run: |
@@ -49,13 +57,67 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
-          asset="$RUNNER_TEMP/tnotes-$VERSION-x86_64-linux"
-          cp target/release/tnotes "$asset"
-          if gh release view "v$VERSION" >/dev/null 2>&1; then
-            gh release upload "v$VERSION" "$asset" --clobber
-          else
-            gh release create "v$VERSION" "$asset" --title "tnotes $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
-          fi
+          gh release view "v$VERSION" >/dev/null 2>&1 \
+            || gh release create "v$VERSION" --title "tnotes $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+
+  # One tarball per target, attached to the release created above.
+  build:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            setup: sudo apt-get update && sudo apt-get install -y musl-tools
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            test: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - if: matrix.setup
+        run: ${{ matrix.setup }}
+      - if: matrix.test
+        run: cargo test
+      - run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        run: |
+          set -eu
+          name="tnotes-$VERSION-${{ matrix.target }}"
+          mkdir -p "$RUNNER_TEMP/$name"
+          cp "target/${{ matrix.target }}/release/tnotes" README.md LICENSE CHANGELOG.md "$RUNNER_TEMP/$name/"
+          tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/$name.tar.gz" "$name"
+          (cd "$RUNNER_TEMP" && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256")
+          echo "ASSET=$RUNNER_TEMP/$name.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "v$VERSION" "$ASSET" "$ASSET.sha256" --clobber
+
+  publish:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
 
       - name: Publish edtui-tnotes if its version is new
         env:
@@ -70,7 +132,15 @@ jobs:
             (cd vendor/edtui && cargo publish)
           fi
 
-      - name: Publish tnotes
+      - name: Publish tnotes if its version is new
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish
+        run: |
+          set -eu
+          v=${{ needs.check.outputs.version }}
+          if curl -sf -A "tnotes-release (github.com/$GITHUB_REPOSITORY)" \
+               "https://crates.io/api/v1/crates/tnotes/$v" >/dev/null; then
+            echo "tnotes $v already published"
+          else
+            cargo publish
+          fi
