@@ -1,3 +1,9 @@
+# edtui-tnotes
+
+Fork of [edtui](https://github.com/preiter93/edtui) 0.11.7 (MIT, Philipp Reiter) used by [tnotes](https://github.com/0x1ocean/tnotes): soft wrapping breaks at word boundaries instead of the last fitting character (`src/view/line_wrapper.rs`, plus cursor mapping in `src/view/internal.rs` and scrolling in `src/state/view.rs`). Everything else is upstream, unchanged. The library is still imported as `edtui`.
+
+---
+
 # edtui
 
 <div align="center">

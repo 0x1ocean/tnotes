@@ -155,7 +155,7 @@ Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/s
 
 ## Vendored edtui
 
-`vendor/edtui` is [edtui](https://github.com/preiter93/edtui) 0.11.7 (MIT, Philipp Reiter) with a word-wrap patch in `src/view/line_wrapper.rs`; upstream wraps by character only. It is pulled in through `[patch.crates-io]` in `Cargo.toml`.
+`vendor/edtui` is [edtui](https://github.com/preiter93/edtui) 0.11.7 (MIT, Philipp Reiter) with a word-wrap patch (`src/view/line_wrapper.rs`, cursor mapping in `src/view/internal.rs`, scrolling in `src/state/view.rs`); upstream wraps by character only. It is published as [`edtui-tnotes`](https://crates.io/crates/edtui-tnotes) so `cargo install tnotes` works; the workspace builds it from `vendor/` via a `path` dependency.
 
 ## License
 

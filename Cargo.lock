@@ -526,7 +526,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "edtui"
+name = "edtui-jagged"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6818b2d6b8b3da52f7491b6331e27d45ae34e5baaffeb1edfde43911fe63dd6"
+
+[[package]]
+name = "edtui-tnotes"
 version = "0.11.7"
 dependencies = [
  "arboard",
@@ -537,12 +543,6 @@ dependencies = [
  "ratatui-widgets",
  "unicode-width",
 ]
-
-[[package]]
-name = "edtui-jagged"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6818b2d6b8b3da52f7491b6331e27d45ae34e5baaffeb1edfde43911fe63dd6"
 
 [[package]]
 name = "either"
@@ -2214,7 +2214,7 @@ dependencies = [
  "chrono",
  "clap",
  "dirs",
- "edtui",
+ "edtui-tnotes",
  "notify",
  "nucleo-matcher",
  "ratatui",
