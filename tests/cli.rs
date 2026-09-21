@@ -98,9 +98,27 @@ fn json_lists_links_and_backlinks() {
     assert_eq!(by_title("B")["backlinks"], serde_json::json!(["vault/a"]));
     assert_eq!(by_title("A")["links"], serde_json::json!(["B"]));
     assert_eq!(by_title("A")["folder"], "vault");
+    assert!(by_title("A").get("text").is_none());
+    let one: serde_json::Value = serde_json::from_str(&v.ok(&["cat", "a", "--json"])).unwrap();
+    assert_eq!(one["text"], "# A\n\n[[B]]\n");
     // The global flag works before the subcommand too.
     let out2 = v.ok(&["--json", "ls"]);
     assert!(out2.trim_start().starts_with('['));
+}
+
+#[test]
+fn new_normalises_tags_and_rejects_blank_titles() {
+    let v = Vault::new();
+    v.ok(&[
+        "new", "T", "--tag", "#work", "--tag", " ", "--tag", " home ",
+    ]);
+    assert_eq!(v.ok(&["cat", "t"]), "# T\n\n#work #home\n");
+    for title in ["", "   "] {
+        let out = v.run(&["new", title]);
+        assert_eq!(out.status.code(), Some(1));
+        assert!(String::from_utf8_lossy(&out.stderr).contains("give a title"));
+    }
+    assert_eq!(v.ok(&["ls"]).lines().count(), 1);
 }
 
 #[test]

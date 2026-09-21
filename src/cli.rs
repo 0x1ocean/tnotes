@@ -68,13 +68,16 @@ struct NoteOut {
     created: String,
     modified: String,
     preview: String,
+    /// Full text; only for single-note commands.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
 }
 
 fn rfc3339(t: SystemTime) -> String {
     chrono::DateTime::<chrono::Local>::from(t).to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn note_out(store: &Store, i: usize) -> NoteOut {
+fn note_out(store: &Store, i: usize, with_text: bool) -> NoteOut {
     let n = &store.notes[i];
     NoteOut {
         id: store.note_id(n),
@@ -95,12 +98,24 @@ fn note_out(store: &Store, i: usize) -> NoteOut {
         created: rfc3339(n.created),
         modified: rfc3339(n.modified),
         preview: n.preview(),
+        text: with_text.then(|| n.text.clone()),
     }
 }
 
 fn print_json<T: serde::Serialize>(v: &T) -> Result<()> {
     println!("{}", serde_json::to_string_pretty(v)?);
     Ok(())
+}
+
+/// `#a #b` line for the note body: leading `#` and blanks stripped, empty tags dropped.
+fn tag_line(tags: &[String]) -> Option<String> {
+    let tags: Vec<String> = tags
+        .iter()
+        .map(|t| t.trim().trim_start_matches('#').trim())
+        .filter(|t| !t.is_empty())
+        .map(|t| format!("#{t}"))
+        .collect();
+    (!tags.is_empty()).then(|| tags.join(" "))
 }
 
 fn print_line(store: &Store, i: usize) {
@@ -175,7 +190,7 @@ fn list(store: &Store, query: &str, tag: Option<&str>, folder: Option<&str>) -> 
 
 fn print_list(store: &Store, idx: &[usize], json: bool) -> Result<()> {
     if json {
-        let out: Vec<NoteOut> = idx.iter().map(|&i| note_out(store, i)).collect();
+        let out: Vec<NoteOut> = idx.iter().map(|&i| note_out(store, i, false)).collect();
         return print_json(&out);
     }
     for &i in idx {
@@ -201,7 +216,7 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
         Cmd::Cat { note } => {
             let i = find(&store, &note)?;
             if json {
-                print_json(&note_out(&store, i))
+                print_json(&note_out(&store, i, true))
             } else {
                 print!("{}", store.notes[i].text);
                 Ok(())
@@ -213,6 +228,9 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
             tags,
             stdin,
         } => {
+            let title = title
+                .map(|t| t.trim().to_string())
+                .filter(|t| !t.is_empty());
             if title.is_none() && !stdin {
                 bail!("give a title or --stdin");
             }
@@ -221,9 +239,8 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
                 None => cfg.roots[0].clone(),
             };
             let mut text = title.map(|t| format!("# {t}\n")).unwrap_or_default();
-            if !tags.is_empty() {
-                let tags: Vec<String> = tags.iter().map(|t| format!("#{t}")).collect();
-                text.push_str(&format!("\n{}\n", tags.join(" ")));
+            if let Some(line) = tag_line(&tags) {
+                text.push_str(&format!("\n{line}\n"));
             }
             if stdin {
                 let mut body = String::new();
@@ -235,7 +252,7 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
             }
             let i = store.create(&dir, &text)?;
             if json {
-                print_json(&note_out(&store, i))
+                print_json(&note_out(&store, i, true))
             } else {
                 println!("{}", store.note_id(&store.notes[i]));
                 Ok(())

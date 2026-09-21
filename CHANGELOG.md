@@ -4,6 +4,10 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+### Fixed
+
+- CLI: `cat --json` now includes `text`; `--tag '#work'` no longer produces `##work`; a blank title is rejected instead of creating `untitled.md`.
+
 ### Added
 
 - Prebuilt release tarballs for Linux x86_64 (glibc, musl), Linux aarch64, and macOS (Apple Silicon, Intel), with SHA-256 sums.
