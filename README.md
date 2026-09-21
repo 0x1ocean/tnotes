@@ -26,7 +26,8 @@
 Requires Rust ≥ 1.98.
 
 ```sh
-cargo install tnotes
+brew install 0x1ocean/tnotes/tnotes   # macOS and Linux, prebuilt binaries
+cargo install tnotes                   # any platform with Rust ≥ 1.98
 ```
 
 or from git:
@@ -191,6 +192,8 @@ Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/s
 
 1. Move the `[Unreleased]` items in `CHANGELOG.md` under a new `## [X.Y.Z] - YYYY-MM-DD` heading and bump `version` in `Cargo.toml` (and `vendor/edtui/Cargo.toml` if the fork changed).
 2. `git tag vX.Y.Z && git push origin main vX.Y.Z`.
+
+The workflow also regenerates the Homebrew formula (`scripts/brew-formula.sh`) and pushes it to [`0x1ocean/homebrew-tnotes`](https://github.com/0x1ocean/homebrew-tnotes) using the `HOMEBREW_TAP_TOKEN` secret (a fine-grained PAT with contents: write on the tap).
 
 The `Release` workflow checks that the tag matches `Cargo.toml`, runs the test suite, attaches Linux and macOS tarballs to a GitHub release whose notes are that changelog section, and publishes `edtui-tnotes` (when its version is new) and `tnotes` to crates.io.
 

@@ -4,6 +4,10 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+### Added
+
+- Homebrew tap: `brew install 0x1ocean/tnotes/tnotes` (macOS Apple Silicon/Intel, Linux x86_64/aarch64); the formula is regenerated on every release.
+
 ## [1.3.0] - 2026-09-21
 
 ### Added

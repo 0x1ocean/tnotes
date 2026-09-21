@@ -144,3 +144,34 @@ jobs:
           else
             cargo publish
           fi
+
+  # Regenerate the Homebrew formula from the uploaded tarballs and push it to the tap.
+  homebrew:
+    needs: [check, build]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Formula
+        run: scripts/brew-formula.sh "${{ needs.check.outputs.version }}" > "$RUNNER_TEMP/tnotes.rb"
+      - name: Install from the generated formula
+        run: |
+          set -eu
+          brew install --formula "$RUNNER_TEMP/tnotes.rb"
+          tnotes --version
+          brew test --formula "$RUNNER_TEMP/tnotes.rb" || brew test tnotes
+      - name: Push to the tap
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -eu
+          [ -n "$GH_TOKEN" ] || { echo "HOMEBREW_TAP_TOKEN not set; skipping tap update"; exit 0; }
+          v=${{ needs.check.outputs.version }}
+          git clone -q "https://x-access-token:$GH_TOKEN@github.com/0x1ocean/homebrew-tnotes.git" "$RUNNER_TEMP/tap"
+          cp "$RUNNER_TEMP/tnotes.rb" "$RUNNER_TEMP/tap/Formula/tnotes.rb"
+          cd "$RUNNER_TEMP/tap"
+          git config user.name "tnotes-release"
+          git config user.email "release@tnotes.invalid"
+          git add Formula/tnotes.rb
+          git diff --cached --quiet && { echo "formula unchanged"; exit 0; }
+          git commit -qm "tnotes $v"
+          git push -q
