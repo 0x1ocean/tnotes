@@ -234,3 +234,41 @@ fn append_adds_lines_with_single_newlines() {
     assert_eq!(out.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&out.stderr).contains("give text or --stdin"));
 }
+
+#[test]
+fn restore_brings_a_note_back() {
+    let v = Vault::new();
+    v.write("sub/x.md", "# X\n");
+    v.ok(&["trash", "x"]);
+    assert!(v.dir.join(".Trash/sub/x.md").exists());
+    assert_eq!(v.ok(&["restore", "vault/sub/x"]), "restored vault/sub/x\n");
+    assert!(v.dir.join("sub/x.md").exists());
+    assert_eq!(v.ok(&["ls"]).lines().count(), 1);
+    v.ok(&["trash", "x"]);
+    assert_eq!(
+        v.ok(&["restore", "vault/.Trash/sub/x"]),
+        "restored vault/sub/x\n"
+    );
+    assert_eq!(v.run(&["restore", "x"]).status.code(), Some(1));
+}
+
+#[test]
+fn limit_caps_the_list() {
+    let v = Vault::new();
+    for n in ["a", "b", "c"] {
+        v.write(&format!("{n}.md"), &format!("# {n}\n"));
+    }
+    assert_eq!(v.ok(&["ls", "--limit", "2"]).lines().count(), 2);
+    assert_eq!(v.ok(&["search", "a", "--limit", "1"]).lines().count(), 1);
+    assert_eq!(v.ok(&["ls", "--limit", "0"]), "");
+}
+
+#[test]
+fn new_refuses_duplicate_titles_unless_forced() {
+    let v = Vault::new();
+    v.ok(&["new", "Plan"]);
+    let out = v.run(&["new", "plan"]);
+    assert_eq!(out.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("already exists: vault/plan"));
+    assert_eq!(v.ok(&["new", "Plan", "--duplicate"]), "vault/plan-2\n");
+}

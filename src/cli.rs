@@ -10,8 +10,8 @@ use nucleo_matcher::Matcher;
 
 use crate::config::Config;
 use crate::index::{self, Filter};
-use crate::note::link_key;
-use crate::store::{SaveOutcome, Store};
+use crate::note::{Note, link_key};
+use crate::store::{SaveOutcome, Store, TRASH_DIR};
 
 #[derive(clap::Subcommand)]
 pub enum Cmd {
@@ -23,6 +23,9 @@ pub enum Cmd {
         /// Only notes under this folder (path or `root/sub` label)
         #[arg(long)]
         folder: Option<String>,
+        /// At most this many notes
+        #[arg(long)]
+        limit: Option<usize>,
     },
     /// Fuzzy-search titles and bodies (best match first)
     Search {
@@ -31,6 +34,8 @@ pub enum Cmd {
         tag: Option<String>,
         #[arg(long)]
         folder: Option<String>,
+        #[arg(long)]
+        limit: Option<usize>,
     },
     /// Print a note's text
     Cat {
@@ -49,6 +54,9 @@ pub enum Cmd {
         /// Read the body from standard input
         #[arg(long)]
         stdin: bool,
+        /// Create even if a note with this title exists
+        #[arg(long)]
+        duplicate: bool,
     },
     /// Replace a note's text with standard input; a changed title renames the file and updates [[links]]
     Write {
@@ -72,6 +80,11 @@ pub enum Cmd {
     /// Move a note to the root's .Trash
     Trash {
         /// Note id (`root/sub/stem`), path, or unique file stem
+        note: String,
+    },
+    /// Move a note back from .Trash to its folder
+    Restore {
+        /// Trashed note id (`root/sub/stem`, with or without `.Trash/`), path, or unique stem
         note: String,
     },
 }
@@ -150,29 +163,37 @@ fn stem(path: &Path) -> &str {
 
 /// Note index for a path, an id (`root/sub/stem`, `.md` tolerated) or a unique file stem.
 fn find(store: &Store, key: &str) -> Result<usize> {
+    find_in(store, &store.notes, key)
+}
+
+/// Like `find`, in the trash; the `.Trash/` component of the id may be omitted.
+fn find_trashed(store: &Store, key: &str) -> Result<usize> {
+    find_in(store, &store.trash, key)
+}
+
+fn find_in(store: &Store, notes: &[Note], key: &str) -> Result<usize> {
     if let Ok(p) = fs::canonicalize(key)
-        && let Some(i) = store.notes.iter().position(|n| n.path == p)
+        && let Some(i) = notes.iter().position(|n| n.path == p)
     {
         return Ok(i);
     }
     let bare = key.trim_end_matches(".md");
-    if let Some(i) = store.notes.iter().position(|n| {
+    let trash_seg = format!("/{TRASH_DIR}/");
+    if let Some(i) = notes.iter().position(|n| {
         let id = store.note_id(n);
-        id == key || id == bare
+        let plain = id.replacen(&trash_seg, "/", 1);
+        id == key || id == bare || plain == key || plain == bare
     }) {
         return Ok(i);
     }
-    let by_stem: Vec<usize> = (0..store.notes.len())
-        .filter(|&i| stem(&store.notes[i].path) == bare)
+    let by_stem: Vec<usize> = (0..notes.len())
+        .filter(|&i| stem(&notes[i].path) == bare)
         .collect();
     match by_stem.as_slice() {
         [i] => Ok(*i),
         [] => bail!("no note {key}"),
         many => {
-            let ids: Vec<String> = many
-                .iter()
-                .map(|&i| store.note_id(&store.notes[i]))
-                .collect();
+            let ids: Vec<String> = many.iter().map(|&i| store.note_id(&notes[i])).collect();
             bail!("ambiguous: {}", ids.join(", "))
         }
     }
@@ -195,7 +216,13 @@ fn find_folder(store: &Store, key: &str) -> Result<PathBuf> {
         .ok_or_else(|| anyhow::anyhow!("no folder {key}"))
 }
 
-fn list(store: &Store, query: &str, tag: Option<&str>, folder: Option<&str>) -> Result<Vec<usize>> {
+fn list(
+    store: &Store,
+    query: &str,
+    tag: Option<&str>,
+    folder: Option<&str>,
+    limit: Option<usize>,
+) -> Result<Vec<usize>> {
     let filter = tag
         .map(|t| Filter::Tag(t.to_lowercase()))
         .unwrap_or(Filter::All);
@@ -204,6 +231,9 @@ fn list(store: &Store, query: &str, tag: Option<&str>, folder: Option<&str>) -> 
     if let Some(f) = folder {
         let dir = find_folder(store, f)?;
         idx.retain(|&i| store.notes[i].path.starts_with(&dir));
+    }
+    if let Some(n) = limit {
+        idx.truncate(n);
     }
     Ok(idx)
 }
@@ -225,12 +255,17 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
     }
     let mut store = Store::load(&cfg.roots)?;
     match cmd {
-        Cmd::Ls { tag, folder } => {
-            let idx = list(&store, "", tag.as_deref(), folder.as_deref())?;
+        Cmd::Ls { tag, folder, limit } => {
+            let idx = list(&store, "", tag.as_deref(), folder.as_deref(), limit)?;
             print_list(&store, &idx, json)
         }
-        Cmd::Search { query, tag, folder } => {
-            let idx = list(&store, &query, tag.as_deref(), folder.as_deref())?;
+        Cmd::Search {
+            query,
+            tag,
+            folder,
+            limit,
+        } => {
+            let idx = list(&store, &query, tag.as_deref(), folder.as_deref(), limit)?;
             print_list(&store, &idx, json)
         }
         Cmd::Cat { note } => {
@@ -247,12 +282,23 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
             folder,
             tags,
             stdin,
+            duplicate,
         } => {
             let title = title
                 .map(|t| t.trim().to_string())
                 .filter(|t| !t.is_empty());
             if title.is_none() && !stdin {
                 bail!("give a title or --stdin");
+            }
+            if !duplicate
+                && let Some(t) = &title
+                && let Some(j) = store.resolve_link(t)
+                && link_key(&store.notes[j].title) == link_key(t)
+            {
+                bail!(
+                    "\"{t}\" already exists: {} (use --duplicate to create anyway)",
+                    store.note_id(&store.notes[j])
+                );
             }
             let dir = match folder {
                 Some(f) => find_folder(&store, &f)?,
@@ -308,6 +354,16 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
                 print_json(&note_out(&store, i, true))
             } else {
                 println!("appended to {}", store.note_id(&store.notes[i]));
+                Ok(())
+            }
+        }
+        Cmd::Restore { note } => {
+            let t = find_trashed(&store, &note)?;
+            store.restore(t)?;
+            if json {
+                print_json(&note_out(&store, 0, true))
+            } else {
+                println!("restored {}", store.note_id(&store.notes[0]));
                 Ok(())
             }
         }

@@ -10,6 +10,7 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ### Added
 
+- CLI `restore <note>`, `--limit N` for `ls`/`search`; `new` refuses a title that already exists unless `--duplicate` is given.
 - CLI `write <note> --stdin` (replace the text; a changed title renames the file and updates `[[links]]`, a concurrent edit becomes a conflict copy and an error) and `append <note> [text|--stdin]`.
 - Prebuilt release tarballs for Linux x86_64 (glibc, musl), Linux aarch64, and macOS (Apple Silicon, Intel), with SHA-256 sums.
 

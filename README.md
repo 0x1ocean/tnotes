@@ -57,13 +57,16 @@ tnotes --dir ~/path   # use only this folder for the session; config roots are l
 Headless subcommands work on the same files (`--dir` and `--json` apply to all of them):
 
 ```sh
-tnotes ls [--tag work] [--folder notes/sub]      # id · title · tags, newest first
-tnotes search "milk" [--tag …] [--folder …]      # fuzzy over titles and bodies, best first
-tnotes cat weekly-plan                           # print the note
-tnotes new "Weekly plan" --tag work [--folder …] # prints the new id
-echo "body" | tnotes new "Piped" --stdin         # body below the title (or whole note without a title)
-tnotes trash weekly-plan                         # move to the root's .Trash
-tnotes ls --json                                 # id, path, title, folder, tags, links, backlinks, created, modified, preview
+tnotes ls [--tag work] [--folder notes/sub] [--limit 20]   # id · title · tags, newest first
+tnotes search "milk" [--tag …] [--folder …] [--limit …]    # fuzzy over titles and bodies, best first
+tnotes cat weekly-plan                                     # print the note (--json adds text)
+tnotes new "Weekly plan" --tag work [--folder …]           # prints the new id; refuses an existing title unless --duplicate
+echo "body" | tnotes new "Piped" --stdin                   # body below the title (or whole note without a title)
+tnotes append weekly-plan "- [ ] milk"                     # or --stdin
+cat new.md | tnotes write weekly-plan --stdin              # replace the text; a new title renames the file and updates [[links]]
+tnotes trash weekly-plan                                   # move to the root's .Trash
+tnotes restore weekly-plan                                 # and back
+tnotes ls --json                                           # id, path, title, folder, tags, links, backlinks, created, modified, preview
 ```
 
 A note is addressed by its id (`root/sub/stem` as printed by `ls`), a path, or a unique file stem.
@@ -79,7 +82,10 @@ tnotes ls --json                                  # every note with tags, links,
 tnotes search "standup" --json | jq '.[0].path'   # best match first
 tnotes cat vault/weekly-plan                      # full text
 echo "- [ ] follow up with Ann" | tnotes new "Meeting notes" --tag work --stdin
+tnotes append meeting-notes "- [ ] send the slides"
 ```
+
+The CLI and the TUI can work on the same vault at the same time: a note that is open but clean in the TUI follows a CLI `write`/`append` live; a note with unsaved edits in the TUI keeps them and the TUI saves a conflict copy next to it.
 
 Notes reference each other with `[[Title]]`; `links` and `backlinks` in the JSON let an agent walk the graph. A note's id (`root/sub/stem`) is stable across `ls`, `search`, `cat` and `trash`.
 
