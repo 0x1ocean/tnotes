@@ -166,11 +166,13 @@ impl App {
             return;
         };
         self.editor_handler.on_event(Event::Mouse(m), &mut t.editor);
+        let mut copied = false;
         match m.kind {
             MouseEventKind::Up(MouseButton::Left) => {
                 if let Some(sel) = t.editor.selection.clone() {
                     t.editor.execute(CopySelection);
                     t.editor.selection = Some(sel);
+                    copied = true;
                 }
                 if keys == EditorKeys::Emacs {
                     t.editor.mode = EditorMode::Insert;
@@ -180,6 +182,9 @@ impl App {
                 t.editor.mode = EditorMode::Insert;
             }
             _ => {}
+        }
+        if copied {
+            self.set_status(StatusKind::Info, "copied to clipboard".into());
         }
     }
 

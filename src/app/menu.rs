@@ -294,21 +294,37 @@ impl App {
                     return;
                 };
                 let has_sel = tab.editor.selection.is_some();
-                match action {
-                    A::Copy if has_sel => tab.editor.execute(CopySelection),
-                    A::Copy => tab.editor.execute(CopyLine),
+                let msg = match action {
+                    A::Copy if has_sel => {
+                        tab.editor.execute(CopySelection);
+                        "copied to clipboard"
+                    }
+                    A::Copy => {
+                        tab.editor.execute(CopyLine);
+                        "line copied to clipboard"
+                    }
                     // `DeleteSelection` copies the removed text itself.
-                    A::Cut if has_sel => tab.editor.execute(DeleteSelection),
+                    A::Cut if has_sel => {
+                        tab.editor.execute(DeleteSelection);
+                        "cut to clipboard"
+                    }
                     A::Cut => {
                         tab.editor.execute(CopyLine);
                         tab.editor.execute(DeleteLine(1));
+                        "line cut to clipboard"
                     }
-                    _ => tab.editor.execute(Paste),
-                }
+                    _ => {
+                        tab.editor.execute(Paste);
+                        ""
+                    }
+                };
                 if keys == EditorKeys::Emacs {
                     tab.editor.mode = EditorMode::Insert;
                 }
                 self.after_edit();
+                if !msg.is_empty() {
+                    self.set_status(StatusKind::Info, msg.into());
+                }
             }
             A::TogglePreview => {
                 self.focus = Pane::Editor;

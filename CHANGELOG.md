@@ -7,10 +7,11 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 ### Added
 
 - `ctrl+c` quits, alongside `ctrl+q`.
-- A mouse selection is copied to the clipboard when the button is released, like in a terminal.
+- A mouse selection is copied to the clipboard when the button is released, like in a terminal; copy/cut confirm in the status bar.
 
 ### Fixed
 
+- Clipboard on Wayland: copies went to the X11 selection via XWayland and never reached the Wayland clipboard; arboard now uses the `wayland-data-control` backend.
 - Context-menu `cut` on a mouse selection did nothing (the copy step cleared the selection before the delete).
 - With emacs keys, a mouse selection left the editor in edtui's Visual/Normal mode where no key did anything. The editor now stays in Insert; Backspace/Delete remove the selection, typing replaces it, any other key drops it.
 - Sidebar text no longer touches the separator line: one blank column is kept before it.
