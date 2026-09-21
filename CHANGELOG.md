@@ -6,6 +6,8 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ### Fixed
 
+- Context-menu `cut` on a mouse selection did nothing (the copy step cleared the selection before the delete).
+- With emacs keys, a mouse selection left the editor in edtui's Visual/Normal mode where no key did anything. The editor now stays in Insert; Backspace/Delete remove the selection, typing replaces it, any other key drops it.
 - Sidebar text no longer touches the separator line: one blank column is kept before it.
 
 ## [1.1.1] - 2026-09-21

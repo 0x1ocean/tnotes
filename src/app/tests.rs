@@ -374,3 +374,58 @@ fn backlinks_overlay_opens_the_source_note() {
     assert_eq!(app.overlay, Overlay::None);
     assert_eq!(app.status.as_ref().unwrap().text, "no backlinks");
 }
+
+/// Render once so the editor knows its screen area, then drag-select `cols` chars on
+/// editor line `row` (emacs keys).
+fn drag_select(app: &mut App, row: u16, cols: u16) {
+    use ratatui::backend::TestBackend;
+    use ratatui::crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+    let mut term = ratatui::Terminal::new(TestBackend::new(100, 20)).unwrap();
+    term.draw(|fr| app.hits = crate::ui::draw(fr, app)).unwrap();
+    let ev = |kind, col, row| MouseEvent {
+        kind,
+        column: col,
+        row,
+        modifiers: KeyModifiers::NONE,
+    };
+    let (x, y) = (app.hits.editor.x, app.hits.editor.y + row);
+    app.on_mouse(ev(MouseEventKind::Down(MouseButton::Left), x, y));
+    app.on_mouse(ev(MouseEventKind::Drag(MouseButton::Left), x + cols - 1, y));
+    app.on_mouse(ev(MouseEventKind::Up(MouseButton::Left), x + cols - 1, y));
+    assert!(app.tabs[app.active].editor.selection.is_some());
+    assert_eq!(app.tabs[app.active].editor.mode, EditorMode::Insert);
+}
+
+#[test]
+fn menu_cut_removes_the_mouse_selection() {
+    let mut f = fixture(&[("a.md", "# A\n\nline one here\n")]);
+    let app = &mut f.app;
+    app.sidebar = false;
+    open_pinned(app, "a.md");
+    drag_select(app, 2, 8);
+    app.open_menu(Position::new(app.hits.editor.x + 5, app.hits.editor.y + 2));
+    app.on_key(key(KeyCode::Char('x')));
+    assert_eq!(line(app, 2), " here");
+    assert!(app.tabs[0].dirty);
+    // The editor is still usable afterwards.
+    type_str(app, "Z");
+    assert_eq!(line(app, 2), "Z here");
+}
+
+#[test]
+fn typing_replaces_and_backspace_deletes_the_mouse_selection() {
+    let mut f = fixture(&[("a.md", "# A\n\nline one here\n")]);
+    let app = &mut f.app;
+    app.sidebar = false;
+    open_pinned(app, "a.md");
+    drag_select(app, 2, 4);
+    app.on_key(key(KeyCode::Backspace));
+    assert_eq!(line(app, 2,), " one here");
+    drag_select(app, 2, 4);
+    type_str(app, "X");
+    assert_eq!(line(app, 2), "X here");
+    drag_select(app, 2, 1);
+    app.on_key(key(KeyCode::Right));
+    assert!(app.tabs[0].editor.selection.is_none());
+    assert_eq!(line(app, 2), "X here");
+}

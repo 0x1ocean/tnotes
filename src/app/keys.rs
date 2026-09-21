@@ -231,6 +231,21 @@ impl App {
             return;
         }
         let tab = &mut self.tabs[self.active];
+        // Emacs keys have no selection mode: a mouse selection is deleted by Backspace/Delete
+        // or replaced by typed text, and dropped by anything else.
+        if self.keys == EditorKeys::Emacs && tab.editor.selection.is_some() {
+            let shift_only = k.modifiers.is_empty() || k.modifiers == KeyModifiers::SHIFT;
+            let typing = shift_only && matches!(k.code, KeyCode::Char(_) | KeyCode::Enter);
+            if typing || matches!(k.code, KeyCode::Backspace | KeyCode::Delete) {
+                tab.editor.execute(DeleteSelection);
+                if !typing {
+                    self.after_edit();
+                    return;
+                }
+            } else {
+                tab.editor.selection = None;
+            }
+        }
         self.editor_handler.on_event(Event::Key(k), &mut tab.editor);
         self.after_edit();
         self.recompute_popup();

@@ -289,6 +289,7 @@ impl App {
             }
             A::Cut | A::Copy | A::Paste => {
                 self.focus = Pane::Editor;
+                let keys = self.keys;
                 let Some(tab) = self.tabs.get_mut(self.active) else {
                     return;
                 };
@@ -296,15 +297,16 @@ impl App {
                 match action {
                     A::Copy if has_sel => tab.editor.execute(CopySelection),
                     A::Copy => tab.editor.execute(CopyLine),
-                    A::Cut if has_sel => {
-                        tab.editor.execute(CopySelection);
-                        tab.editor.execute(DeleteSelection);
-                    }
+                    // `DeleteSelection` copies the removed text itself.
+                    A::Cut if has_sel => tab.editor.execute(DeleteSelection),
                     A::Cut => {
                         tab.editor.execute(CopyLine);
                         tab.editor.execute(DeleteLine(1));
                     }
                     _ => tab.editor.execute(Paste),
+                }
+                if keys == EditorKeys::Emacs {
+                    tab.editor.mode = EditorMode::Insert;
                 }
                 self.after_edit();
             }

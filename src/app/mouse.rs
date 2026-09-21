@@ -114,8 +114,9 @@ impl App {
                     self.focus = Pane::Editor;
                     self.search_active = false;
                     self.popup = None;
-                    if !preview && let Some(t) = self.tabs.get_mut(self.active) {
-                        self.editor_handler.on_event(Event::Mouse(m), &mut t.editor);
+                    if !preview && self.active < self.tabs.len() {
+                        self.editor_mouse(m);
+                        let t = &mut self.tabs[self.active];
                         let cur = t.editor.cursor;
                         let line = t.editor.lines.get(RowIndex::new(cur.row)).cloned();
                         // Clicking inside `[ ]` / `[x]` toggles the task.
@@ -145,15 +146,26 @@ impl App {
                 }
                 None => {}
             },
-            MouseEventKind::Drag(MouseButton::Left) | MouseEventKind::Up(MouseButton::Left) => {
-                if self.focus == Pane::Editor
-                    && !preview
-                    && let Some(t) = self.tabs.get_mut(self.active)
-                {
-                    self.editor_handler.on_event(Event::Mouse(m), &mut t.editor);
-                }
+            MouseEventKind::Drag(MouseButton::Left) | MouseEventKind::Up(MouseButton::Left)
+                if self.focus == Pane::Editor && !preview && !self.tabs.is_empty() =>
+            {
+                self.editor_mouse(m);
             }
             _ => {}
+        }
+    }
+
+    /// Forward a mouse event to the active editor. edtui switches to `Visual` on drag and
+    /// to `Normal` on the next click; the emacs keymap has no bindings in either, so keep it
+    /// in `Insert` there (the selection itself is mode-independent).
+    fn editor_mouse(&mut self, m: MouseEvent) {
+        let keys = self.keys;
+        let Some(t) = self.tabs.get_mut(self.active) else {
+            return;
+        };
+        self.editor_handler.on_event(Event::Mouse(m), &mut t.editor);
+        if keys == EditorKeys::Emacs {
+            t.editor.mode = EditorMode::Insert;
         }
     }
 
