@@ -156,9 +156,11 @@ jobs:
       - name: Install from the generated formula
         run: |
           set -eu
-          brew install --formula "$RUNNER_TEMP/tnotes.rb"
+          brew tap-new --no-git local/check
+          cp "$RUNNER_TEMP/tnotes.rb" "$(brew --repository local/check)/Formula/tnotes.rb"
+          brew install local/check/tnotes
           tnotes --version
-          brew test --formula "$RUNNER_TEMP/tnotes.rb" || brew test tnotes
+          brew test local/check/tnotes
       - name: Push to the tap
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
