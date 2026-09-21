@@ -208,7 +208,8 @@ pub fn draw(f: &mut Frame, app: &mut App) -> Hits {
             top.width
         };
         let nav = if show_editor {
-            Rect::new(top.x, top.y + 1, nav_w, top.height - 1)
+            // One blank column before the separator so text never touches it.
+            Rect::new(top.x, top.y + 1, nav_w - 1, top.height - 1)
         } else {
             top
         };

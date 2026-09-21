@@ -4,6 +4,10 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+### Fixed
+
+- Sidebar text no longer touches the separator line: one blank column is kept before it.
+
 ## [1.1.1] - 2026-09-21
 
 ### Added
