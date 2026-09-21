@@ -123,7 +123,8 @@ The in-app `?` page is the source of truth.
 | editor · vim | search | `/` `n` `N` |
 | mouse | click / double-click | select · pin |
 | mouse | right-click | context menu |
-| mouse | wheel / drag | scroll · select text |
+| mouse | wheel / drag | scroll · select text (copied on release) |
+| mouse | shift+drag | the terminal's own selection, bypassing tnotes |
 
 ## Configuration
 

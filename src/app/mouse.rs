@@ -155,17 +155,31 @@ impl App {
         }
     }
 
-    /// Forward a mouse event to the active editor. edtui switches to `Visual` on drag and
-    /// to `Normal` on the next click; the emacs keymap has no bindings in either, so keep it
-    /// in `Insert` there (the selection itself is mode-independent).
+    /// Forward a mouse event to the active editor. edtui enters `Visual` on drag (re-entering
+    /// it would restart the selection, so it stays until the button is released) and falls
+    /// back to `Normal` on the next click. The emacs keymap has no bindings in either mode,
+    /// so under emacs keys the editor is put back into `Insert` on click and on release; the
+    /// selection itself is mode-independent and, like in a terminal, is copied on release.
     fn editor_mouse(&mut self, m: MouseEvent) {
         let keys = self.keys;
         let Some(t) = self.tabs.get_mut(self.active) else {
             return;
         };
         self.editor_handler.on_event(Event::Mouse(m), &mut t.editor);
-        if keys == EditorKeys::Emacs {
-            t.editor.mode = EditorMode::Insert;
+        match m.kind {
+            MouseEventKind::Up(MouseButton::Left) => {
+                if let Some(sel) = t.editor.selection.clone() {
+                    t.editor.execute(CopySelection);
+                    t.editor.selection = Some(sel);
+                }
+                if keys == EditorKeys::Emacs {
+                    t.editor.mode = EditorMode::Insert;
+                }
+            }
+            MouseEventKind::Down(MouseButton::Left) if keys == EditorKeys::Emacs => {
+                t.editor.mode = EditorMode::Insert;
+            }
+            _ => {}
         }
     }
 

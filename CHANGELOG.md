@@ -7,6 +7,7 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 ### Added
 
 - `ctrl+c` quits, alongside `ctrl+q`.
+- A mouse selection is copied to the clipboard when the button is released, like in a terminal.
 
 ### Fixed
 

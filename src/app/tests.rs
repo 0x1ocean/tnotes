@@ -390,10 +390,14 @@ fn drag_select(app: &mut App, row: u16, cols: u16) {
     };
     let (x, y) = (app.hits.editor.x, app.hits.editor.y + row);
     app.on_mouse(ev(MouseEventKind::Down(MouseButton::Left), x, y));
+    // Several drag events: each one must extend the selection, not restart it.
+    app.on_mouse(ev(MouseEventKind::Drag(MouseButton::Left), x + 1, y));
     app.on_mouse(ev(MouseEventKind::Drag(MouseButton::Left), x + cols - 1, y));
     app.on_mouse(ev(MouseEventKind::Up(MouseButton::Left), x + cols - 1, y));
-    assert!(app.tabs[app.active].editor.selection.is_some());
-    assert_eq!(app.tabs[app.active].editor.mode, EditorMode::Insert);
+    let ed = &app.tabs[app.active].editor;
+    let sel = ed.selection.as_ref().expect("selection");
+    assert_eq!((sel.start().col, sel.end().col), (0, cols as usize - 1));
+    assert_eq!(ed.mode, EditorMode::Insert);
 }
 
 #[test]
