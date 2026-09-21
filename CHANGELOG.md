@@ -4,18 +4,25 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
-### Fixed
-
-- `ls --json` on a large vault resolved backlinks quadratically (2 s for 500 notes); now linear (40 ms).
-- A note renamed on disk (e.g. by `tnotes write` changing the title) keeps its tab in a running TUI instead of closing it.
-- CLI `write` with empty input is rejected instead of turning the note into `untitled.md`.
-- CLI: `cat --json` now includes `text`; `--tag '#work'` no longer produces `##work`; a blank title is rejected instead of creating `untitled.md`.
+## [1.3.0] - 2026-09-21
 
 ### Added
 
-- CLI `restore <note>`, `--limit N` for `ls`/`search`; `new` refuses a title that already exists unless `--duplicate` is given.
-- CLI `write <note> --stdin` (replace the text; a changed title renames the file and updates `[[links]]`, a concurrent edit becomes a conflict copy and an error) and `append <note> [text|--stdin]`.
+- CLI `write <note> --stdin` (replace the text; a changed title renames the file and updates `[[links]]`; a concurrent edit becomes a conflict copy and an error; empty input is refused) and `append <note> [text|--stdin]`.
+- CLI `restore <note>`, `--limit N` for `ls`/`search`, `text` in `cat --json`; `new` refuses a title that already exists unless `--duplicate` is given.
 - Prebuilt release tarballs for Linux x86_64 (glibc, musl), Linux aarch64, and macOS (Apple Silicon, Intel), with SHA-256 sums.
+- A note renamed on disk (`mv`, or `tnotes write` changing the title) keeps its tab in a running TUI; unsaved edits in that tab become a conflict copy next to the new file.
+- Quitting with a note that cannot be saved (disk full, permissions) writes its text under the state directory (`…/tnotes/unsaved/`) and reports the path instead of losing it; trash, folder delete and reload refuse to proceed after a failed save.
+
+### Fixed
+
+- `ls --json` on a large vault resolved backlinks quadratically (2 s for 500 notes); now linear (40 ms).
+- CLI: `--tag '#work'` works for `new`, `ls` and `search` (leading `#` stripped); a blank title is rejected instead of creating `untitled.md`; `append "- item"` no longer trips the argument parser.
+- Clicking a row in a scrolled overlay (folder browser, backlinks, move picker) hit the wrong entry.
+- Pasting while the settings page was open went into the hidden editor.
+- With emacs keys, `ctrl+c`/`ctrl+q` now also quit from the settings page.
+- External updates of an open note keep the cursor position instead of jumping to the top.
+- `editor.width` from the config is clamped to 40..=160 like the settings page does.
 
 ## [1.2.0] - 2026-09-21
 
@@ -57,7 +64,8 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 Initial release: folders, `#tags`, tabs with a preview tab, live Markdown highlighting, emacs/vim keys, mouse-first UI, session restore, in-app settings, atomic saves with conflict copies, live reload.
 
-[Unreleased]: https://github.com/0x1ocean/tnotes/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/0x1ocean/tnotes/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/0x1ocean/tnotes/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/0x1ocean/tnotes/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/0x1ocean/tnotes/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/0x1ocean/tnotes/compare/v1.0.0...v1.1.0

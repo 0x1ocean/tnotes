@@ -181,7 +181,11 @@ impl App {
                 rows.push(header("mouse"));
                 rows.push(info("click / double-click", "select · pin".into()));
                 rows.push(info("right-click", "context menu".into()));
-                rows.push(info("wheel / drag", "scroll · select text".into()));
+                rows.push(info(
+                    "wheel / drag",
+                    "scroll · select text (copied on release)".into(),
+                ));
+                rows.push(info("shift+drag", "the terminal's own selection".into()));
                 rows
             }
             _ => vec![

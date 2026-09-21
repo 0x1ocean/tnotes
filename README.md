@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/0x1ocean/tnotes/actions/workflows/ci.yml/badge.svg)
 
-![tnotes](docs/screenshot.png)
+![tnotes](https://raw.githubusercontent.com/0x1ocean/tnotes/main/docs/screenshot.png)
 
 ## Features
 
@@ -19,7 +19,7 @@
 - Session restore: open tabs, filter, sort, focus and folded sections come back on the next launch.
 - In-app settings page (`F2` or `,`) that writes the config file for you.
 - Five-colour theme that follows your terminal palette.
-- Headless CLI (`tnotes ls | search | cat | new | trash`, `--json`) for scripts and agents; a running TUI picks the changes up live.
+- Headless CLI (`tnotes ls | search | cat | new | append | write | trash | restore`, `--json`) for scripts and agents; a running TUI picks the changes up live.
 
 ## Install
 
@@ -40,11 +40,12 @@ Prebuilt binaries are attached to each [release](https://github.com/0x1ocean/tno
 ```sh
 # pick your target: x86_64-unknown-linux-gnu · x86_64-unknown-linux-musl · aarch64-unknown-linux-gnu
 #                   aarch64-apple-darwin · x86_64-apple-darwin
-curl -sL https://github.com/0x1ocean/tnotes/releases/latest/download/tnotes-1.2.0-aarch64-apple-darwin.tar.gz | tar xz
-install tnotes-1.2.0-aarch64-apple-darwin/tnotes ~/.local/bin/
+V=1.3.0; T=aarch64-apple-darwin
+curl -sL https://github.com/0x1ocean/tnotes/releases/download/v$V/tnotes-$V-$T.tar.gz | tar xz
+install tnotes-$V-$T/tnotes ~/.local/bin/
 ```
 
-The binaries are not signed; on macOS a download through the browser is quarantined by Gatekeeper, `curl` is not.
+Each tarball has a `.sha256` next to it. The binaries are not signed; on macOS a download through the browser is quarantined by Gatekeeper, `curl` is not.
 
 ## Usage
 
@@ -87,7 +88,7 @@ tnotes append meeting-notes "- [ ] send the slides"
 
 The CLI and the TUI can work on the same vault at the same time: a note that is open but clean in the TUI follows a CLI `write`/`append` live; a note with unsaved edits in the TUI keeps them and the TUI saves a conflict copy next to it.
 
-Notes reference each other with `[[Title]]`; `links` and `backlinks` in the JSON let an agent walk the graph. A note's id (`root/sub/stem`) is stable across `ls`, `search`, `cat` and `trash`.
+Notes reference each other with `[[Title]]`; `links` and `backlinks` in the JSON let an agent walk the graph. A note's id (`root/sub/stem`) is the same in every command (`ls`, `search`, `cat`, `append`, `write`, `trash`, `restore`).
 
 ## Keys
 
@@ -106,7 +107,7 @@ The in-app `?` page is the source of truth.
 | global | previous pane | `shift+tab` |
 | global | settings | `F2` |
 | global | help | `F1` |
-| global | quit | `ctrl+q` · `ctrl+c` |
+| global | quit | `ctrl+q` · `ctrl+c` (list/tree: `q`) |
 | list | move | `j/k` `↑/↓` |
 | list | edit (pins the tab) | `enter` / `l` |
 | list | search | `/` |
@@ -120,7 +121,7 @@ The in-app `?` page is the source of truth.
 | tree | filter | `enter` |
 | tree | fold | `space` |
 | tree | new / rename / delete folder | `N` / `R` / `D` |
-| tree | switch pane | `h` / `l` |
+| tree | list ← · filter → list | `h` / `l` |
 | editor | back to list | `esc` |
 | editor | complete tag | `#…` `tab` |
 | editor | complete link | `[[…` `tab` |
@@ -143,7 +144,7 @@ The in-app `?` page is the source of truth.
 
 ## Configuration
 
-`~/.config/tnotes/config.toml` (macOS: `~/Library/Application Support/tnotes/config.toml`) — every key with its default:
+`~/.config/tnotes/config.toml` (macOS: `~/Library/Application Support/tnotes/config.toml`) — every key with its default (`notes_dir = "…"` from 0.x is still read when `roots` is absent):
 
 ```toml
 roots = ["~/Documents/notes"]
@@ -160,7 +161,7 @@ keys = "emacs"           # emacs | vim
 autosave_ms = 500        # idle time before a dirty tab is written; 200..=3000
 template = "# "          # initial text of a new note; cursor lands at the end of the first line
 wrap = true
-width = 72               # max text column width in cells; 0 = full editor width
+width = 72               # max text column width in cells, 40..=160; 0 = full editor width
 align = "left"           # left | center
 cursor = "drawn"         # drawn (painted by the editor) | bar | underline | block (terminal cursor)
 blink = false

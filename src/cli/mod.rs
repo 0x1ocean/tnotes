@@ -31,10 +31,13 @@ pub enum Cmd {
     /// Fuzzy-search titles and bodies (best match first)
     Search {
         query: String,
+        /// Only notes with this tag (or a nested one)
         #[arg(long)]
         tag: Option<String>,
+        /// Only notes under this folder (path or `root/sub` label)
         #[arg(long)]
         folder: Option<String>,
+        /// At most this many notes
         #[arg(long)]
         limit: Option<usize>,
     },

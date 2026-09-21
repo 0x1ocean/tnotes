@@ -20,9 +20,8 @@ use ratatui::crossterm::execute;
 use crate::app::App;
 use crate::store::Store;
 
-/// Minimalist Markdown notes in the terminal.
 #[derive(Parser)]
-#[command(version, about)]
+#[command(version, about = env!("CARGO_PKG_DESCRIPTION"))]
 struct Args {
     /// Single notes folder for this session (overrides config `roots`).
     #[arg(long, global = true)]
@@ -40,6 +39,9 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     if args.cmd.is_some() && args.folder.is_some() {
         anyhow::bail!("a folder argument cannot be combined with a subcommand");
+    }
+    if args.cmd.is_none() && args.json {
+        anyhow::bail!("--json only applies to subcommands (ls, search, cat, new, …)");
     }
     let mut cfg = config::load(args.dir)?;
     if let Some(cmd) = args.cmd {
