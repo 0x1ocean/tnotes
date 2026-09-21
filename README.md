@@ -170,6 +170,13 @@ Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/s
 
 `vendor/edtui` is [edtui](https://github.com/preiter93/edtui) 0.11.7 (MIT, Philipp Reiter) with a word-wrap patch (`src/view/line_wrapper.rs`, cursor mapping in `src/view/internal.rs`, scrolling in `src/state/view.rs`); upstream wraps by character only. It is published as [`edtui-tnotes`](https://crates.io/crates/edtui-tnotes) so `cargo install tnotes` works; the workspace builds it from `vendor/` via a `path` dependency.
 
+## Releasing
+
+1. Move the `[Unreleased]` items in `CHANGELOG.md` under a new `## [X.Y.Z] - YYYY-MM-DD` heading and bump `version` in `Cargo.toml` (and `vendor/edtui/Cargo.toml` if the fork changed).
+2. `git tag vX.Y.Z && git push origin main vX.Y.Z`.
+
+The `Release` workflow checks that the tag matches `Cargo.toml`, runs the test suite, attaches a Linux x86_64 binary to a GitHub release whose notes are that changelog section, and publishes `edtui-tnotes` (when its version is new) and `tnotes` to crates.io.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
