@@ -52,6 +52,30 @@ impl Vault {
         );
         String::from_utf8(out.stdout).unwrap()
     }
+
+    /// Run with `input` on stdin; asserts success and returns stdout.
+    fn ok_stdin(&self, args: &[&str], input: &str) -> String {
+        let mut child = self
+            .cmd(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(input.as_bytes())
+            .unwrap();
+        let out = child.wait_with_output().unwrap();
+        assert!(
+            out.status.success(),
+            "{args:?} failed: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8(out.stdout).unwrap()
+    }
 }
 
 impl Drop for Vault {
@@ -167,4 +191,46 @@ fn new_from_stdin_without_title() {
     );
     let out = v.run(&["new"]);
     assert_eq!(out.status.code(), Some(1));
+}
+
+#[test]
+fn write_replaces_text_and_renames_on_title_change() {
+    let v = Vault::new();
+    v.write("b.md", "# B\n");
+    v.write("a.md", "# A\n\nsee [[B]]\n");
+    assert_eq!(
+        v.ok_stdin(&["write", "b", "--stdin"], "# Bee\n\nbody\n"),
+        "wrote vault/bee\n"
+    );
+    assert!(v.dir.join("bee.md").exists());
+    assert!(!v.dir.join("b.md").exists());
+    assert_eq!(
+        fs::read_to_string(v.dir.join("a.md")).unwrap(),
+        "# A\n\nsee [[Bee]]\n"
+    );
+    let one: serde_json::Value =
+        serde_json::from_str(&v.ok_stdin(&["write", "bee", "--stdin", "--json"], "# Bee\n\nv2\n"))
+            .unwrap();
+    assert_eq!(one["text"], "# Bee\n\nv2\n");
+    assert_eq!(one["backlinks"], serde_json::json!(["vault/a"]));
+    // --stdin is mandatory for write.
+    assert_eq!(v.run(&["write", "bee"]).status.code(), Some(2));
+}
+
+#[test]
+fn append_adds_lines_with_single_newlines() {
+    let v = Vault::new();
+    v.write("plan.md", "# Plan\n\n- [ ] a");
+    assert_eq!(
+        v.ok(&["append", "plan", "- [ ] b"]),
+        "appended to vault/plan\n"
+    );
+    v.ok_stdin(&["append", "plan", "--stdin"], "- [ ] c\n");
+    assert_eq!(
+        fs::read_to_string(v.dir.join("plan.md")).unwrap(),
+        "# Plan\n\n- [ ] a\n- [ ] b\n- [ ] c\n"
+    );
+    let out = v.run(&["append", "plan"]);
+    assert_eq!(out.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("give text or --stdin"));
 }

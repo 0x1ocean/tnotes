@@ -10,7 +10,8 @@ use nucleo_matcher::Matcher;
 
 use crate::config::Config;
 use crate::index::{self, Filter};
-use crate::store::Store;
+use crate::note::link_key;
+use crate::store::{SaveOutcome, Store};
 
 #[derive(clap::Subcommand)]
 pub enum Cmd {
@@ -46,6 +47,25 @@ pub enum Cmd {
         #[arg(long = "tag")]
         tags: Vec<String>,
         /// Read the body from standard input
+        #[arg(long)]
+        stdin: bool,
+    },
+    /// Replace a note's text with standard input; a changed title renames the file and updates [[links]]
+    Write {
+        /// Note id (`root/sub/stem`), path, or unique file stem
+        note: String,
+        /// Read the new text from standard input (required; makes the intent explicit)
+        #[arg(long, required = true)]
+        stdin: bool,
+    },
+    /// Append text to the end of a note
+    Append {
+        /// Note id (`root/sub/stem`), path, or unique file stem
+        note: String,
+        /// Text to append (alternative to --stdin)
+        #[arg(conflicts_with = "stdin", allow_hyphen_values = true)]
+        text: Option<String>,
+        /// Read the text to append from standard input
         #[arg(long)]
         stdin: bool,
     },
@@ -243,8 +263,7 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
                 text.push_str(&format!("\n{line}\n"));
             }
             if stdin {
-                let mut body = String::new();
-                std::io::stdin().read_to_string(&mut body)?;
+                let body = read_stdin()?;
                 if !text.is_empty() {
                     text.push('\n');
                 }
@@ -255,6 +274,40 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
                 print_json(&note_out(&store, i, true))
             } else {
                 println!("{}", store.note_id(&store.notes[i]));
+                Ok(())
+            }
+        }
+        Cmd::Write { note, stdin: _ } => {
+            let i = find(&store, &note)?;
+            let text = read_stdin()?;
+            save(&mut store, i, &text)?;
+            if json {
+                print_json(&note_out(&store, i, true))
+            } else {
+                println!("wrote {}", store.note_id(&store.notes[i]));
+                Ok(())
+            }
+        }
+        Cmd::Append { note, text, stdin } => {
+            let i = find(&store, &note)?;
+            let body = match text {
+                Some(t) => t,
+                None if stdin => read_stdin()?,
+                None => bail!("give text or --stdin"),
+            };
+            let mut t = store.notes[i].text.clone();
+            if !t.is_empty() && !t.ends_with('\n') {
+                t.push('\n');
+            }
+            t.push_str(&body);
+            if !body.ends_with('\n') {
+                t.push('\n');
+            }
+            save(&mut store, i, &t)?;
+            if json {
+                print_json(&note_out(&store, i, true))
+            } else {
+                println!("appended to {}", store.note_id(&store.notes[i]));
                 Ok(())
             }
         }
@@ -270,4 +323,30 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
             }
         }
     }
+}
+
+fn read_stdin() -> Result<String> {
+    let mut s = String::new();
+    std::io::stdin().read_to_string(&mut s)?;
+    Ok(s)
+}
+
+/// Save `text` into note `i` the way the TUI does: a conflict with a concurrent writer is an
+/// error (the text survives as the conflict copy), a changed title rewrites `[[links]]` in
+/// the other notes. Mirrors `App::save_tab`.
+fn save(store: &mut Store, i: usize, text: &str) -> Result<()> {
+    let old_title = store.notes[i].title.clone();
+    match store.save(i, text)? {
+        SaveOutcome::Saved => {}
+        SaveOutcome::Conflict(p) => bail!(
+            "note changed on disk meanwhile; your text was saved as {}",
+            p.display()
+        ),
+    }
+    let new_title = store.notes[i].title.clone();
+    if old_title != "Untitled" && link_key(&old_title) != link_key(&new_title) {
+        let own = store.notes[i].path.clone();
+        store.relink(&old_title, &new_title, &[own])?;
+    }
+    Ok(())
 }
