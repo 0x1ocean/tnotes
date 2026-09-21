@@ -1,6 +1,6 @@
 # tnotes
 
-Minimal Markdown notes in the terminal: folders, tags, tabs, live highlighting, mouse-first.
+**t**erminal **notes**: minimal Markdown notes with folders, `#tags`, `[[links]]`, tabs, live highlighting, a mouse-first TUI — and a headless CLI so scripts and AI agents can work the same vault.
 
 ![CI](https://github.com/0x1ocean/tnotes/actions/workflows/ci.yml/badge.svg)
 
@@ -26,16 +26,16 @@ Minimal Markdown notes in the terminal: folders, tags, tabs, live highlighting, 
 Requires Rust ≥ 1.98.
 
 ```sh
+cargo install tnotes
+```
+
+or from git:
+
+```sh
 cargo install --git https://github.com/0x1ocean/tnotes
 ```
 
-or
-
-```sh
-git clone https://github.com/0x1ocean/tnotes
-cd tnotes
-cargo install --path .
-```
+Prebuilt Linux x86_64 binaries are attached to each [release](https://github.com/0x1ocean/tnotes/releases).
 
 ## Usage
 
@@ -60,6 +60,19 @@ tnotes ls --json                                 # id, path, title, folder, tags
 A note is addressed by its id (`root/sub/stem` as printed by `ls`), a path, or a unique file stem.
 
 The first launch asks where your notes live (default `~/Documents/notes`).
+
+### Use with AI agents
+
+The CLI is the agent interface: no daemon, no API — just files and JSON. Point an agent at your vault and let it read, search and write notes while you keep the TUI open; edits show up live in both directions.
+
+```sh
+tnotes ls --json                                  # every note with tags, links, backlinks, timestamps and a preview
+tnotes search "standup" --json | jq '.[0].path'   # best match first
+tnotes cat vault/weekly-plan                      # full text
+echo "- [ ] follow up with Ann" | tnotes new "Meeting notes" --tag work --stdin
+```
+
+Notes reference each other with `[[Title]]`; `links` and `backlinks` in the JSON let an agent walk the graph. A note's id (`root/sub/stem`) is stable across `ls`, `search`, `cat` and `trash`.
 
 ## Keys
 

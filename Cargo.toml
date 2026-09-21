@@ -2,7 +2,7 @@
 name = "tnotes"
 version = "1.0.0"
 edition = "2024"
-description = "Minimal Markdown notes in the terminal: folders, tags, tabs, live highlighting, mouse-first"
+description = "Terminal notes: Markdown files with folders, #tags, [[links]], a mouse-first TUI and a JSON CLI for scripts and agents"
 license = "MIT"
 repository = "https://github.com/0x1ocean/tnotes"
 readme = "README.md"
