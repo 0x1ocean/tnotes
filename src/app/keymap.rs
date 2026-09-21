@@ -155,7 +155,7 @@ pub const BINDINGS: &[Binding] = &[
         &[plain(KeyCode::F(2))],
     ),
     bind(Global, Action::Help, "help", &[plain(KeyCode::F(1))]),
-    bind(Global, Action::Quit, "quit", &[ctrl('q')]),
+    bind(Global, Action::Quit, "quit", &[ctrl('q'), ctrl('c')]),
     doc(List, "j/k ↑/↓", "move"),
     doc(List, "enter / l", "edit (pins the tab)"),
     doc(List, "/", "search"),

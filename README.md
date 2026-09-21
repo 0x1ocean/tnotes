@@ -91,7 +91,7 @@ The in-app `?` page is the source of truth.
 | global | previous pane | `shift+tab` |
 | global | settings | `F2` |
 | global | help | `F1` |
-| global | quit | `ctrl+q` |
+| global | quit | `ctrl+q` · `ctrl+c` |
 | list | move | `j/k` `↑/↓` |
 | list | edit (pins the tab) | `enter` / `l` |
 | list | search | `/` |

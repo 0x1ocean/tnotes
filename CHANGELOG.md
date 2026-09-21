@@ -4,6 +4,10 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+### Added
+
+- `ctrl+c` quits, alongside `ctrl+q`.
+
 ### Fixed
 
 - Context-menu `cut` on a mouse selection did nothing (the copy step cleared the selection before the delete).
