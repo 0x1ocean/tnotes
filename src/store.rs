@@ -367,6 +367,29 @@ impl Store {
             .collect()
     }
 
+    /// `backlinks(i)` for every note at once: each distinct link target is resolved a single
+    /// time, so listing a whole vault stays linear in the number of links.
+    pub fn backlinks_all(&self) -> Vec<Vec<usize>> {
+        let mut cache: HashMap<String, Option<usize>> = HashMap::new();
+        let mut out = vec![Vec::new(); self.notes.len()];
+        for (i, n) in self.notes.iter().enumerate() {
+            let mut seen = Vec::new();
+            for l in &n.links {
+                let target = *cache
+                    .entry(link_key(l))
+                    .or_insert_with(|| self.resolve_link(l));
+                if let Some(t) = target
+                    && t != i
+                    && !seen.contains(&t)
+                {
+                    seen.push(t);
+                    out[t].push(i);
+                }
+            }
+        }
+        out
+    }
+
     /// Rewrite `[[old_title]]` → `[[new_title]]` on disk in every note not in `skip`.
     /// Returns the paths that were rewritten. Stops at the first write error (earlier files
     /// stay rewritten). No-op when `link_key(old) == link_key(new)`.
@@ -839,6 +862,21 @@ mod tests {
         let (a, b) = (idx(&store, "a.md"), idx(&store, "b.md"));
         assert_eq!(store.backlinks(b), vec![a]);
         assert_eq!(store.backlinks(a), Vec::<usize>::new());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn backlinks_all_matches_backlinks() {
+        let dir = temp_dir();
+        fs::write(dir.join("a.md"), "# A\n\n[[B]] [[b]] [[C]] [[A]]\n").unwrap();
+        fs::write(dir.join("b.md"), "# B\n\n[[C]]\n").unwrap();
+        fs::write(dir.join("c.md"), "# C\n").unwrap();
+        let store = load(&dir);
+        let all = store.backlinks_all();
+        for (i, links) in all.iter().enumerate() {
+            assert_eq!(*links, store.backlinks(i), "note {i}");
+        }
+        assert_eq!(all[idx(&store, "c.md")].len(), 2);
         fs::remove_dir_all(&dir).unwrap();
     }
 

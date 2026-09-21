@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Receiver;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use anyhow::Result;
 use edtui::actions::{
@@ -370,6 +370,10 @@ impl App {
             while let Ok(p) = self.watch_rx.try_recv() {
                 changed.insert(p);
             }
+            // Paths that still exist first, so a rename's new file is known before the old
+            // path is handled (`on_external` retargets the tab).
+            let mut changed: Vec<PathBuf> = changed.into_iter().collect();
+            changed.sort_by_key(|p| !p.exists());
             for p in changed {
                 self.on_external(p);
             }

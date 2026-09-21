@@ -111,6 +111,10 @@ fn rfc3339(t: SystemTime) -> String {
 }
 
 fn note_out(store: &Store, i: usize, with_text: bool) -> NoteOut {
+    note_out_with(store, i, with_text, &store.backlinks(i))
+}
+
+fn note_out_with(store: &Store, i: usize, with_text: bool, backlinks: &[usize]) -> NoteOut {
     let n = &store.notes[i];
     NoteOut {
         id: store.note_id(n),
@@ -123,10 +127,9 @@ fn note_out(store: &Store, i: usize, with_text: bool) -> NoteOut {
             .unwrap_or_default(),
         tags: n.tags.clone(),
         links: n.links.clone(),
-        backlinks: store
-            .backlinks(i)
-            .into_iter()
-            .map(|j| store.note_id(&store.notes[j]))
+        backlinks: backlinks
+            .iter()
+            .map(|&j| store.note_id(&store.notes[j]))
             .collect(),
         created: rfc3339(n.created),
         modified: rfc3339(n.modified),
@@ -240,7 +243,11 @@ fn list(
 
 fn print_list(store: &Store, idx: &[usize], json: bool) -> Result<()> {
     if json {
-        let out: Vec<NoteOut> = idx.iter().map(|&i| note_out(store, i, false)).collect();
+        let all = store.backlinks_all();
+        let out: Vec<NoteOut> = idx
+            .iter()
+            .map(|&i| note_out_with(store, i, false, &all[i]))
+            .collect();
         return print_json(&out);
     }
     for &i in idx {
@@ -326,6 +333,9 @@ pub fn run(cmd: Cmd, cfg: &Config, json: bool) -> Result<()> {
         Cmd::Write { note, stdin: _ } => {
             let i = find(&store, &note)?;
             let text = read_stdin()?;
+            if text.trim().is_empty() {
+                bail!("empty text; use `trash` to remove a note");
+            }
             save(&mut store, i, &text)?;
             if json {
                 print_json(&note_out(&store, i, true))

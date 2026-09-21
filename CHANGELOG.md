@@ -6,6 +6,9 @@ All notable changes to tnotes. The format follows [Keep a Changelog](https://kee
 
 ### Fixed
 
+- `ls --json` on a large vault resolved backlinks quadratically (2 s for 500 notes); now linear (40 ms).
+- A note renamed on disk (e.g. by `tnotes write` changing the title) keeps its tab in a running TUI instead of closing it.
+- CLI `write` with empty input is rejected instead of turning the note into `untitled.md`.
 - CLI: `cat --json` now includes `text`; `--tag '#work'` no longer produces `##work`; a blank title is rejected instead of creating `untitled.md`.
 
 ### Added

@@ -433,3 +433,20 @@ fn typing_replaces_and_backspace_deletes_the_mouse_selection() {
     assert!(app.tabs[0].editor.selection.is_none());
     assert_eq!(line(app, 2), "X here");
 }
+
+#[test]
+fn external_rename_retargets_a_clean_tab() {
+    let mut f = fixture(&[("a.md", "# A\n")]);
+    let (a, b) = (f.dir.join("a.md"), f.dir.join("b.md"));
+    let app = &mut f.app;
+    open_pinned(app, "a.md");
+    fs::rename(&a, &b).unwrap();
+    fs::write(&b, "# B\n").unwrap();
+    // The run loop hands existing paths over first.
+    app.on_external(b.clone());
+    app.on_external(a.clone());
+    assert_eq!(app.tabs.len(), 1);
+    assert_eq!(app.tabs[0].path, b);
+    assert_eq!(line(app, 0), "# B");
+    assert!(!app.tabs[0].dirty);
+}

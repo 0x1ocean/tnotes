@@ -272,3 +272,20 @@ fn new_refuses_duplicate_titles_unless_forced() {
     assert!(String::from_utf8_lossy(&out.stderr).contains("already exists: vault/plan"));
     assert_eq!(v.ok(&["new", "Plan", "--duplicate"]), "vault/plan-2\n");
 }
+
+#[test]
+fn write_refuses_empty_text() {
+    let v = Vault::new();
+    v.write("a.md", "# A\n");
+    let mut child = v
+        .cmd(&["write", "a", "--stdin"])
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(b"  \n").unwrap();
+    let out = child.wait_with_output().unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("empty text"));
+    assert_eq!(fs::read_to_string(v.dir.join("a.md")).unwrap(), "# A\n");
+}

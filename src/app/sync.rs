@@ -9,6 +9,7 @@ impl App {
         if dirty && path.exists() {
             return; // the pending save will detect the conflict
         }
+        let created = self.note_by_path(&path).map(|(n, _)| n.created);
         let outcome = self.store.reload_path(&path);
         match outcome {
             Reload::Ignored => return,
@@ -56,6 +57,19 @@ impl App {
                             }
                             Err(e) => self.fail("re-create", e),
                         }
+                    } else if let Some(new) = created.and_then(|c| self.renamed_to(&path, c)) {
+                        // A rename (e.g. `tnotes write` changing the title): follow it.
+                        let text = self
+                            .note_by_path(&new)
+                            .map(|(n, _)| n.text.clone())
+                            .unwrap_or_default();
+                        self.tabs[i].path = new.clone();
+                        self.reload_tab(i, &text);
+                        self.set_status(
+                            StatusKind::Reloaded,
+                            format!("renamed to {}", file_name(&new)),
+                        );
+                        self.persist_session();
                     } else {
                         self.close_tab(i);
                     }
@@ -64,6 +78,19 @@ impl App {
             Reload::Added => {}
         }
         self.refresh();
+    }
+
+    /// The note `old` was renamed to, if a sibling with the same birth time exists and no
+    /// tab shows it yet. Rename keeps the birth time on ext4/btrfs/APFS; where `created`
+    /// falls back to `modified` nothing matches and the tab simply closes.
+    fn renamed_to(&self, old: &Path, created: SystemTime) -> Option<PathBuf> {
+        self.store
+            .notes
+            .iter()
+            .filter(|n| n.created == created && n.path != old && n.path.parent() == old.parent())
+            .filter(|n| !self.tabs.iter().any(|t| t.path == n.path))
+            .map(|n| n.path.clone())
+            .next()
     }
 
     pub(super) fn reload_store(&mut self) {
