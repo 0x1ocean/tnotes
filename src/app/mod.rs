@@ -58,6 +58,8 @@ const STATUS_TTL: Duration = Duration::from_secs(3);
 const UNDO_TRASH_WINDOW: Duration = Duration::from_secs(5);
 const WHEEL_STEP: usize = 3;
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
+/// A note removed while a sibling was written this recently is treated as a rename.
+const RENAME_WINDOW: Duration = Duration::from_secs(2);
 const TAG_POPUP_MAX: usize = 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

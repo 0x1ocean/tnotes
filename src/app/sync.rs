@@ -80,14 +80,17 @@ impl App {
         self.refresh();
     }
 
-    /// The note `old` was renamed to, if a sibling with the same birth time exists and no
-    /// tab shows it yet. Rename keeps the birth time on ext4/btrfs/APFS; where `created`
-    /// falls back to `modified` nothing matches and the tab simply closes.
+    /// The note `old` was renamed to: a sibling no tab shows yet that either kept the birth
+    /// time (plain `mv`) or was written within the last two seconds (`tnotes write`, which
+    /// saves through a temp file and so gets a new inode).
     fn renamed_to(&self, old: &Path, created: SystemTime) -> Option<PathBuf> {
+        let now = SystemTime::now();
+        let fresh = |t: SystemTime| now.duration_since(t).is_ok_and(|d| d < RENAME_WINDOW);
         self.store
             .notes
             .iter()
-            .filter(|n| n.created == created && n.path != old && n.path.parent() == old.parent())
+            .filter(|n| n.path != old && n.path.parent() == old.parent())
+            .filter(|n| n.created == created || fresh(n.modified))
             .filter(|n| !self.tabs.iter().any(|t| t.path == n.path))
             .map(|n| n.path.clone())
             .next()
