@@ -10,7 +10,7 @@ export const config = {
   matcher: ["/((?!_astro|_vercel|favicon\\.svg|og\\.png|.*\\.(?:md|txt|xml|png|svg|woff2)$).*)"],
 };
 
-export default function middleware(request: Request) {
+export default async function middleware(request: Request) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/$/, "") || "/index";
   const twin = `${path}.md`;
@@ -20,5 +20,9 @@ export default function middleware(request: Request) {
     return next({ headers: { Vary: "Accept", Link: `<${twin}>; rel="alternate"; type="text/markdown"` } });
   }
   url.pathname = twin;
-  return rewrite(url, { headers: { Vary: "Accept" } });
+  /* A twin exists for every real page; anything else is a 404 and gets the
+     Markdown 404 body (with a real 404 status via the /404.md rewrite below). */
+  const exists = (await fetch(url, { method: "HEAD" })).ok;
+  if (!exists) url.pathname = "/404.md";
+  return rewrite(url, { headers: { Vary: "Accept" }, ...(exists ? {} : { status: 404 }) });
 }

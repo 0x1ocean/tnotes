@@ -36,10 +36,11 @@ export default function markdownTwins(): AstroIntegration {
         const full: string[] = [];
         let count = 0;
         for (const { pathname } of pages) {
-          if (pathname === "404") continue;
           const clean = pathname.replace(/\/$/, "");
-          const htmlPath = `${root}${clean ? clean + "/" : ""}index.html`;
-          const html = await readFile(htmlPath, "utf8").catch(() => null);
+          // directory format writes `x/index.html`; the 404 page is `404.html`.
+          const html =
+            (await readFile(`${root}${clean ? clean + "/" : ""}index.html`, "utf8").catch(() => null)) ??
+            (await readFile(`${root}${clean}.html`, "utf8").catch(() => null));
           if (!html) continue;
           const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
           const description = html.match(/name="description" content="([^"]*)"/)?.[1] ?? "";
@@ -48,7 +49,7 @@ export default function markdownTwins(): AstroIntegration {
           const url = `${site}/${clean}`;
           const md = `---\ntitle: "${title.replace(/"/g, '\\"')}"\ndescription: "${description.replace(/"/g, '\\"')}"\ncanonical: ${url}\n---\n\n${body}\n`;
           await writeFile(`${root}${clean || "index"}.md`, md);
-          full.push(`<!-- ${url} -->\n# ${title}\n\n${body}`);
+          if (clean !== "404") full.push(`<!-- ${url} -->\n# ${title}\n\n${body}`);
           count++;
         }
         await writeFile(`${root}llms-full.txt`, `# tnotes.app — full site content\n\n${full.join("\n\n---\n\n")}\n`);
