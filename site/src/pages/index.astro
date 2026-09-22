@@ -2,14 +2,14 @@
 import Base from "@/layouts/Base.astro";
 import AsciiLogo from "@/components/AsciiLogo.astro";
 import FakeTui from "@/components/FakeTui.astro";
-import FeatureCard from "@/components/FeatureCard.astro";
+import ManPage from "@/components/ManPage.astro";
 import Code from "@/components/Code.astro";
 import Card from "@/components/Card.astro";
 import Faq from "@/components/Faq.astro";
 import Section from "@/components/Section.astro";
 import InstallTabs from "@/components/InstallTabs.astro";
 import Step from "@/components/Step.astro";
-import { AGENT_JSON, CONFIG_SAMPLE, EXPLORE, FAQ, FEATURES, INSTALL, PILLARS, WORKFLOWS } from "@/data/landing";
+import { AGENT_JSON, ANNOTATIONS, CONFIG_SAMPLE, EXPLORE, FAQ, INSTALL, MAN, PILLARS, WORKFLOWS } from "@/data/landing";
 import { DESCRIPTION, REPO, SITE_NAME, VERSION } from "@/lib/meta";
 import { faqPage } from "@/lib/schema";
 ---
@@ -51,7 +51,25 @@ import { faqPage } from "@/lib/schema";
   </Section>
 
   <Section id="features" title="Features">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{FEATURES.map((f) => <FeatureCard {...f} />)}</div>
+    <p class="text-sm text-muted-foreground max-w-2xl mb-6">Most of what tnotes does is on screen at once. The numbers point at it; the manual below lists the rest.</p>
+    <div class="hidden md:block"><FakeTui annotate /></div>
+    <ol class="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 text-sm" aria-label="What the numbers point at">
+      {
+        ANNOTATIONS.map((a) => (
+          <li class="flex gap-3">
+            <span class="shrink-0 mt-0.5 size-5 rounded-full bg-warn text-background text-[0.7rem] font-bold flex items-center justify-center">{a.n}</span>
+            <span>
+              <span class="text-accent-foreground font-bold">{a.title}</span>
+              <span class="block text-muted-foreground leading-6" set:html={a.body} />
+            </span>
+          </li>
+        ))
+      }
+    </ol>
+    <div class="mt-14 pt-10 border-t border-border/60">
+      <p class="text-xs text-dim mb-6"><span class="text-muted-foreground">$</span> man tnotes</p>
+      <ManPage sections={MAN} />
+    </div>
   </Section>
 
   <Section id="workflow" title="How it feels">

@@ -2,19 +2,28 @@
 /* The screenshot, rebuilt as text: indexable, crisp on any DPI, ~2 KB.
    Layout mirrors the real TUI: tree + tags + list on the left, tabs + editor
    on the right, status bar at the bottom. Built as strings and injected with
-   set:html so the compiler cannot collapse the column-aligned whitespace. */
+   set:html so the compiler cannot collapse the column-aligned whitespace.
+   With `annotate`, numbered markers are placed on the parts a legend explains
+   (see ANNOTATIONS: the numbers here and there must agree). */
+interface Props {
+  annotate?: boolean;
+}
+const { annotate = false } = Astro.props;
+
 const d = (s: string) => `<span class="text-dim">${s}</span>`;
 const tag = (s: string) => `<span class="text-tag">${s}</span>`;
 const link = (s: string) => `${d("[[")}<u class="text-primary">${s}</u>${d("]]")}`;
 const done = (s: string) => `<span class="text-dim line-through">- [x] ${s}</span>`;
 const todo = (s: string) => `${d("- [")} ${d("]")} ${s}`;
+/* Marker: a small numbered badge glued to the left of the annotated text. */
+const a = (n: number, s: string) => (annotate ? `<b class="anno" data-n="${n}"></b>${s}` : s);
 
 const sidebar = [
-  `<span class="text-primary">│</span>All notes               ${d("5")}`,
+  `${a(1, `<span class="text-primary">│</span>All notes`)}               ${d("5")}`,
   `${d("▾")} vault                 ${d("5")}`,
   `    projects            ${d("1")}`,
   ``,
-  d("▾ tags"),
+  a(2, d("▾ tags")),
   `  books                 ${d("1")}`,
   `  home                  ${d("1")}`,
   `  planning              ${d("1")}`,
@@ -23,7 +32,7 @@ const sidebar = [
   `${d("▾")} work                  ${d("3")}`,
   `    tnotes              ${d("1")}`,
   d("────────────────────────"),
-  d("/ search"),
+  a(3, d("/ search")),
   `<b class="text-accent-foreground">Weekly plan</b>`,
   d("today · #work #planning"),
   `tnotes roadmap`,
@@ -37,24 +46,26 @@ const sidebar = [
 ].join("\n");
 
 const editor = [
-  `${d("1 tnotes roadmap")}  <span class="bg-secondary text-accent-foreground font-bold px-1">2 Weekly plan ×</span>`,
+  `${d("1 tnotes roadmap")}  ${a(4, `<span class="bg-secondary text-accent-foreground font-bold px-1">2 Weekly plan ×</span>`)}`,
   ``,
   `${d("#")} <b class="text-accent-foreground">Weekly plan</b>`,
   ``,
-  tag("#work #planning"),
+  a(5, tag("#work #planning")),
   ``,
   done("Review pull requests"),
-  done("Write release notes"),
-  `${todo(`Ship tnotes 1.1 ${tag("#tnotes")} — see ${link("tnotes roadmap")}`)}<span class="cursor"></span>`,
-  todo(`Book flights for ${d("**")}<b>Berlin</b>${d("**")} ${tag("#travel")}`),
+  a(6, done("Write release notes")),
+  `${todo(`Ship tnotes 1.1 ${tag("#tnotes")} — see ${a(7, link("tnotes roadmap"))}`)}<span class="cursor"></span>`,
+  todo(`Book flights for ${a(8, `${d("**")}<b>Berlin</b>${d("**")}`)} ${tag("#travel")}`),
   todo(`Prep ${link("Meeting notes")}`),
   ``,
   `${d("&gt;")} <i class="text-muted-foreground">Keep the list short.</i>`,
 ].join("\n");
+
+const status = `${a(9, `<span class="text-ok">● saved</span>`)} · 45 words · ${a(10, "↩ 1")} · ${a(11, "emacs")} · ? help · settings`;
 ---
 
 <figure
-  class="rounded-lg border border-border bg-card shadow-2xl shadow-black/40 overflow-hidden"
+  class:list={["rounded-lg border border-border bg-card shadow-2xl shadow-black/40 overflow-hidden", annotate && "annotated"]}
   role="img"
   aria-label="tnotes terminal interface: a folder and tag tree, a note list, tabs, and the Weekly plan note open in the Markdown editor"
 >
@@ -70,6 +81,26 @@ const editor = [
   </div>
   <div class="flex items-center gap-4 px-3 h-7 border-t border-border text-xs text-muted-foreground whitespace-nowrap overflow-hidden" aria-hidden="true">
     <span><span class="bg-secondary px-1">&lt;&lt;</span> All notes · 5 · by modified</span>
-    <span class="ml-auto"><span class="text-ok">● saved</span> · 45 words · ↩ 1 · emacs · ? help · settings</span>
+    <span class="ml-auto" set:html={status} />
   </div>
 </figure>
+
+<style is:global>
+  /* Numbered markers on the annotated TUI: inline badges that take a cell and a half. */
+  .annotated .anno::after {
+    content: attr(data-n);
+    display: inline-block;
+    min-width: 1.35em;
+    height: 1.35em;
+    margin-right: 0.35em;
+    padding: 0 0.2em;
+    border-radius: 999px;
+    background: var(--warn);
+    color: var(--background);
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1.35em;
+    text-align: center;
+    vertical-align: 0.1em;
+  }
+</style>

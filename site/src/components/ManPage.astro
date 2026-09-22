@@ -1,0 +1,29 @@
+---
+/* `man tnotes`: SECTION headings, a flag column, a description column.
+   Rendered as a definition list per section so it reads as a table for
+   assistive tech and the Markdown twin. */
+interface Props {
+  sections: { section: string; items: { flag: string; body: string }[] }[];
+}
+const { sections } = Astro.props;
+---
+
+<div class="grid gap-x-12 gap-y-10 lg:grid-cols-2 text-sm">
+  {
+    sections.map((s) => (
+      <section aria-labelledby={`man-${s.section.toLowerCase()}`}>
+        <h3 id={`man-${s.section.toLowerCase()}`} class="text-xs font-bold tracking-widest text-accent-foreground mb-4">
+          {s.section}
+        </h3>
+        <dl class="grid grid-cols-[minmax(7rem,auto)_1fr] gap-x-6 gap-y-3 pl-4 border-l border-border">
+          {s.items.map((it) => (
+            <>
+              <dt class="text-primary whitespace-nowrap">{it.flag}</dt>
+              <dd class="text-muted-foreground leading-6" set:html={it.body} />
+            </>
+          ))}
+        </dl>
+      </section>
+    ))
+  }
+</div>

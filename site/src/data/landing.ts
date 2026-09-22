@@ -79,23 +79,63 @@ export const PILLARS = [
   },
 ];
 
-/** `icon` is 1–3 lines of monospace art; `body` is trusted HTML (kbd/code). */
-export const FEATURES = [
-  { title: "Plain Markdown on disk", icon: "┌─┐\n│▒│.md\n└─┘", body: "Atomic saves, a <code>name (conflict &lt;time&gt;).md</code> copy instead of an overwrite, and live reload when a file changes outside the app." },
-  { title: "Folders and #tags", icon: "▾ work\n  └ #project", body: "Folders are real directories. Tags are parsed from the text, nested ones like <code>#work/project</code> included. Click a tag to filter." },
-  { title: "[[Links]] and backlinks", icon: "[[note]] ←→ ↩ 3", body: "Completion popup after <code>[[</code>, <kbd>alt+enter</kbd> or <kbd>ctrl+click</kbd> to follow (missing targets are created), a backlinks overlay, and links rewritten on rename." },
-  { title: "Tabs with a preview tab", icon: "1 roadmap  2 plan ×", body: "Selecting a note previews it; typing or <kbd>enter</kbd> pins it. Jump with <kbd>1–9</kbd>, cycle with <kbd>alt+.</kbd> / <kbd>alt+,</kbd>." },
-  { title: "Live Markdown highlighting", icon: "# ** _ ` > - [x]", body: "Headings, lists, checkboxes, code, links, emphasis, quotes and tags styled as you type. Colour or monochrome." },
-  { title: "Lists that behave", icon: "- [ ] ⏎\n  - [ ] ⇥", body: "<kbd>enter</kbd> continues a list, an empty item ends it, <kbd>tab</kbd> / <kbd>shift+tab</kbd> nest, <kbd>alt+x</kbd> or a click toggles a checkbox." },
-  { title: "Emacs or vim keys", icon: "C-s  M-f  :wq", body: "Powered by edtui. Emacs by default; vim with normal/insert modes, <code>.</code> repeat, <code>/</code> search. Switch in settings." },
-  { title: "Mouse-first", icon: "click ·· drag\n   right-click ▸", body: "Click to select, double-click to pin, right-click context menus, wheel scrolling, drag to select text (copied on release)." },
-  { title: "Fuzzy search", icon: "/ milk_ ▸ 3", body: "<kbd>/</kbd> searches titles and bodies with a fuzzy matcher (nucleo), combined with tag and folder filters." },
-  { title: "Session restore", icon: "↻ tabs · filter · sort", body: "Open tabs, filter, sort, focus and folded tree sections come back exactly as you left them." },
-  { title: "In-app settings", icon: "F2 ▸ [x] wrap", body: "<kbd>F2</kbd> or <kbd>,</kbd> opens a settings page that writes <code>config.toml</code> for you. Theme follows your terminal palette." },
-  { title: "Headless JSON CLI", icon: "$ tnotes ls --json", body: "<code>ls · search · cat · new · append · write · trash · restore</code>. Same ids everywhere. A running TUI picks changes up live." },
-  { title: "Small terminals", icon: "[▪]  ◂  [▪▪]", body: "A single-panel layout kicks in on narrow windows; <kbd>ctrl+b</kbd> toggles the sidebar." },
-  { title: "Trash, not delete", icon: ".Trash/ ↩ restore", body: "Every root has its own <code>.Trash/</code> mirroring the folder layout, so <kbd>u</kbd> undoes and <kbd>r</kbd> restores to where a note came from." },
-  { title: "Never loses text", icon: "● saved  ▲ unsaved/", body: "If a save fails (disk full, permissions) the text is written under the state dir and the path is shown instead of losing it." },
+/** Legend for the annotated TUI; numbers match `a(n, …)` calls in FakeTui.astro. */
+export const ANNOTATIONS = [
+  { n: 1, title: "Folders are directories", body: "Every root and subfolder in the tree is a real directory on disk." },
+  { n: 2, title: "#tags, parsed from the text", body: "Nested ones like <code>#work/project</code> too. Click one to filter." },
+  { n: 3, title: "Fuzzy search", body: "<kbd>/</kbd> searches titles and bodies (nucleo), combined with tag and folder filters." },
+  { n: 4, title: "Tabs with a preview tab", body: "Selecting a note previews it; typing or <kbd>enter</kbd> pins it. <kbd>1–9</kbd> jumps." },
+  { n: 5, title: "Tags live in the note", body: "No frontmatter, no sidecar file: the tag line is the tag." },
+  { n: 6, title: "Lists that behave", body: "<kbd>enter</kbd> continues, an empty item ends, <kbd>tab</kbd> nests, <kbd>alt+x</kbd> or a click toggles the box." },
+  { n: 7, title: "[[Links]] with completion", body: "Popup after <code>[[</code>, <kbd>alt+enter</kbd> follows, a missing target is created, links are rewritten on rename." },
+  { n: 8, title: "Live Markdown highlighting", body: "Headings, emphasis, code, quotes, links and tags styled as you type; colour or mono." },
+  { n: 9, title: "Autosave, atomic, never lost", body: "Written after 500 ms idle to a temp file then renamed; a conflict copy instead of an overwrite; a failed save keeps the text under the state dir." },
+  { n: 10, title: "Backlinks", body: "Count in the status bar, overlay on <kbd>alt+enter</kbd>, and a <code>backlinks</code> field in the CLI's JSON." },
+  { n: 11, title: "Emacs or vim keys", body: "edtui underneath. Switch on the settings page (<kbd>F2</kbd>)." },
+];
+
+/** man-page style feature list: SECTION → flag → description (trusted HTML). */
+export const MAN = [
+  {
+    section: "FILES",
+    items: [
+      { flag: ".md on disk", body: "One file per note, named after its title. Atomic saves, <code>name (conflict &lt;time&gt;).md</code> instead of a silent overwrite, live reload when a file changes outside the app." },
+      { flag: "folders", body: "Real directories. Every root has its own <code>.Trash/</code> mirroring the layout, so <kbd>u</kbd> undoes and <kbd>r</kbd> restores." },
+      { flag: "#tags", body: "Parsed from the text, nested <code>#work/project</code> included. Nothing else is written next to your notes." },
+      { flag: "sync", body: "Any file sync: git, Syncthing, iCloud, Dropbox. Syncer conflict files are listed as ordinary notes." },
+    ],
+  },
+  {
+    section: "EDITOR",
+    items: [
+      { flag: "[[links]]", body: "Completion popup after <code>[[</code>, <kbd>alt+enter</kbd> or <kbd>ctrl+click</kbd> to follow, backlinks overlay, rewritten when a title changes." },
+      { flag: "- [ ] lists", body: "<kbd>enter</kbd> continues, empty item ends, <kbd>tab</kbd> / <kbd>shift+tab</kbd> nest, <kbd>alt+x</kbd> toggles a checkbox." },
+      { flag: "highlighting", body: "Headings, lists, checkboxes, code, links, emphasis, quotes, tags as you type. Colour or monochrome; the theme follows your terminal palette." },
+      { flag: "emacs | vim", body: "edtui keys. Vim has normal and insert modes, <code>.</code> repeat and <code>/</code> search." },
+      { flag: "wrap, width", body: "Word wrap at a configurable column, left or centred, drawn or terminal cursor." },
+    ],
+  },
+  {
+    section: "NAVIGATION",
+    items: [
+      { flag: "tabs", body: "One preview tab; editing pins it. <kbd>1–9</kbd> jumps, <kbd>alt+.</kbd> / <kbd>alt+,</kbd> cycle, <kbd>ctrl+w</kbd> closes." },
+      { flag: "/ search", body: "Fuzzy over titles and bodies, combined with the tag and folder filter. <kbd>s</kbd> changes the sort." },
+      { flag: "mouse", body: "Click selects, double-click pins, right-click opens a context menu, wheel scrolls, drag selects text and copies on release." },
+      { flag: "session", body: "Open tabs, filter, sort, focus and folded tree sections come back on the next launch." },
+      { flag: "narrow", body: "A single-panel layout on small terminals; <kbd>ctrl+b</kbd> toggles the sidebar." },
+      { flag: "F2", body: "An in-app settings page that writes <code>config.toml</code> for you." },
+    ],
+  },
+  {
+    section: "CLI",
+    items: [
+      { flag: "tnotes ls --json", body: "Every note with id, path, title, folder, tags, links, backlinks, created, modified, preview. <code>--tag</code>, <code>--folder</code>, <code>--limit</code>." },
+      { flag: "search · cat", body: "Fuzzy search, best first; <code>cat</code> prints a note, <code>--json</code> adds the text." },
+      { flag: "new · append · write", body: "Create, add a line, replace the text; all take <code>--stdin</code>. A changed title renames the file and updates links." },
+      { flag: "trash · restore", body: "To the root's <code>.Trash/</code> and back. Nothing is deleted outright." },
+      { flag: "live", body: "A running TUI picks CLI changes up; a tab with unsaved edits is never overwritten. No daemon, no API: files and JSON, which is all an agent needs." },
+    ],
+  },
 ];
 
 export const WORKFLOWS = [
