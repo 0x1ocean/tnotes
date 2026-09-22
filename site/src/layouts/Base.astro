@@ -1,5 +1,6 @@
 ---
 import "@/styles/global.css";
+import fontUrl from "@/assets/fonts/jetbrains-mono-400-700.woff2?url";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import { DESCRIPTION, REPO, SITE_NAME, VERSION } from "@/lib/meta";
@@ -50,6 +51,7 @@ const graph = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -86,5 +88,19 @@ const graph = [
       <slot />
     </main>
     <Footer />
+    <script>
+      /* The only client JS on the site: copy buttons rendered by Code.astro. */
+      document.addEventListener("click", async (e) => {
+        const b = (e.target as Element).closest<HTMLButtonElement>("button[data-copy]");
+        if (!b) return;
+        await navigator.clipboard.writeText(b.dataset.copy ?? "");
+        b.textContent = "✓";
+        b.classList.add("text-ok");
+        setTimeout(() => {
+          b.textContent = "⧉";
+          b.classList.remove("text-ok");
+        }, 1500);
+      });
+    </script>
   </body>
 </html>

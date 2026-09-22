@@ -1,6 +1,13 @@
 /** A yes/no/partial cell in a comparison matrix, with an optional one-line note. */
 export type Cell = { v: "yes" | "no" | "partial"; note?: string };
 
+/** Glyph and colour class for each cell value; shared by the matrix and the hub table. */
+export const MARK: Record<Cell["v"], readonly [string, string]> = {
+  yes: ["✓", "text-ok"],
+  partial: ["~", "text-warn"],
+  no: ["✗", "text-dim"],
+};
+
 /** Feature rows shared by every comparison page. Order = table order. */
 export const FEATURES = [
   ["storage", "Storage format"],

@@ -3,12 +3,14 @@ interface Props {
   /** Small ASCII pictogram, 1–3 lines, drawn in monospace. */
   icon: string;
   title: string;
+  /** Trusted HTML (kbd/code only). */
+  body: string;
 }
-const { icon, title } = Astro.props;
+const { icon, title, body } = Astro.props;
 ---
 
 <article class="rounded-md border border-border bg-card/60 p-5 flex flex-col gap-3 hover:border-primary/50 transition-colors">
   <pre aria-hidden="true" class="tui text-primary text-xs leading-[1.15] h-9 select-none">{icon}</pre>
   <h3 class="font-bold text-accent-foreground">{title}</h3>
-  <p class="text-sm text-muted-foreground leading-6"><slot /></p>
+  <p class="text-sm text-muted-foreground leading-6" set:html={body} />
 </article>

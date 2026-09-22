@@ -1,0 +1,18 @@
+---
+/* A landing-page section: top border, `# Title` h2 (or sr-only), then the
+   slot inside a wrapper that takes `class` (so grid layouts exclude the h2). */
+interface Props {
+  id: string;
+  title: string;
+  srOnly?: boolean;
+  class?: string;
+}
+const { id, title, srOnly = false, class: cls = "mt-6" } = Astro.props;
+---
+
+<section class="py-12 border-t border-border scroll-mt-16" aria-labelledby={`${id}-h`} id={id}>
+  <h2 id={`${id}-h`} class:list={srOnly ? "sr-only" : "text-lg font-bold text-primary"}>
+    {!srOnly && <span class="text-dim"># </span>}{title}
+  </h2>
+  <div class={cls}><slot /></div>
+</section>

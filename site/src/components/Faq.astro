@@ -1,0 +1,25 @@
+---
+import type { Faq } from "@/lib/schema";
+
+/* Answers are plain text or pre-rendered HTML (`html: true`). Pair with
+   `faqPage()` from lib/schema for the JSON-LD. */
+interface Props {
+  items: (Faq & { html?: string })[];
+  columns?: 1 | 2;
+}
+const { items, columns = 2 } = Astro.props;
+---
+
+<dl class:list={["grid gap-6", columns === 2 && "md:grid-cols-2"]}>
+  {
+    items.map(({ q, a, html }) => (
+      <div>
+        <dt class="font-bold text-accent-foreground">
+          <span class="text-dim">? </span>
+          {q}
+        </dt>
+        {html ? <dd class="mt-1 text-sm text-muted-foreground leading-6 [&>p]:my-1" set:html={html} /> : <dd class="mt-1 text-sm text-muted-foreground leading-6">{a}</dd>}
+      </div>
+    ))
+  }
+</dl>

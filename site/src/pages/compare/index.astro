@@ -1,11 +1,11 @@
 ---
 import Base from "@/layouts/Base.astro";
 import { TOOLS } from "@/data/tools";
-import { FEATURES } from "@/data/types";
+import { FEATURES, MARK } from "@/data/types";
 import { TNOTES } from "@/data/tnotes";
 
 const description = `tnotes compared with ${TOOLS.length} note-taking tools — ${TOOLS.map((t) => t.name).join(", ")}: storage format, wikilinks, CLI, sync, and how to use each alongside tnotes.`.slice(0, 160);
-const mark = { yes: ["✓", "text-ok"], partial: ["~", "text-warn"], no: ["✗", "text-dim"] } as const;
+
 const cols = FEATURES.filter(([k]) => ["terminal", "wikilinks", "cli", "json", "sync", "openSource"].includes(k));
 ---
 
@@ -27,7 +27,7 @@ const cols = FEATURES.filter(([k]) => ["terminal", "wikilinks", "cli", "json", "
         <tbody>
           <tr class="text-primary font-bold">
             <td class="py-2 px-4 sm:px-0 border-b border-border/60">tnotes</td>
-            {cols.map(([k]) => <td class="py-2 px-2 border-b border-border/60"><span class={mark[TNOTES[k].v][1]}>{mark[TNOTES[k].v][0]}</span></td>)}
+            {cols.map(([k]) => <td class="py-2 px-2 border-b border-border/60"><span class={MARK[TNOTES[k].v][1]}>{MARK[TNOTES[k].v][0]}</span></td>)}
           </tr>
           {
             TOOLS.map((t) => (
@@ -38,7 +38,7 @@ const cols = FEATURES.filter(([k]) => ["terminal", "wikilinks", "cli", "json", "
                 </td>
                 {cols.map(([k]) => (
                   <td class="py-2 px-2 border-b border-border/60">
-                    <span class:list={["font-bold", mark[t.features[k].v][1]]}>{mark[t.features[k].v][0]}</span>
+                    <span class:list={["font-bold", MARK[t.features[k].v][1]]}>{MARK[t.features[k].v][0]}</span>
                   </td>
                 ))}
               </tr>

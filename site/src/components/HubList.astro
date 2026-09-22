@@ -1,4 +1,6 @@
 ---
+import Card from "@/components/Card.astro";
+
 interface Props {
   title: string;
   intro: string;
@@ -11,15 +13,6 @@ const { title, intro, items } = Astro.props;
   <h1 class="text-2xl font-bold text-primary"><span class="text-dim"># </span>{title}</h1>
   <p class="mt-3 text-muted-foreground max-w-2xl leading-7">{intro}</p>
   <ul class="mt-8 grid gap-3 sm:grid-cols-2">
-    {
-      items.map((it) => (
-        <li>
-          <a href={it.href} class="block h-full rounded-md border border-border bg-card/60 p-4 hover:border-primary/50">
-            <span class="font-bold text-accent-foreground">{it.title}</span>
-            <span class="block mt-1 text-sm text-muted-foreground leading-6">{it.description}</span>
-          </a>
-        </li>
-      ))
-    }
+    {items.map((it) => <li><Card {...it} /></li>)}
   </ul>
 </div>

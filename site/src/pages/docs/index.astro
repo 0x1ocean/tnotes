@@ -1,35 +1,27 @@
 ---
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
+import Card from "@/components/Card.astro";
 import DocsNav from "@/components/DocsNav.astro";
 
 const docs = (await getCollection("docs")).sort((a, b) => a.data.order - b.data.order);
+const cards = [
+  ...docs.map((d) => ({ href: `/docs/${d.id}`, title: d.data.title, description: d.data.description })),
+  {
+    href: "/agents",
+    title: "Use with AI agents",
+    description: "Recipes for Claude Code, Codex, cron jobs and shell scripts that read and write the vault through the CLI.",
+  },
+];
 ---
 
-<Base title="Docs" description="tnotes documentation: install, keyboard and mouse reference, config.toml, the JSON CLI, and sync/encryption recipes.">
+<Base title="Documentation" description="tnotes documentation: install, keyboard and mouse reference, config.toml, the JSON CLI, and sync/encryption recipes.">
   <div class="grid lg:grid-cols-[14rem_1fr] gap-10 pt-10">
     <DocsNav docs={docs} />
     <div class="max-w-3xl">
       <h1 class="text-2xl font-bold text-primary"><span class="text-dim"># </span>Documentation</h1>
       <p class="mt-3 text-muted-foreground">Everything in the README, split by topic. The in-app <kbd>?</kbd> page is always the source of truth for keys.</p>
-      <ul class="mt-8 grid gap-3 sm:grid-cols-2">
-        {
-          docs.map((d) => (
-            <li>
-              <a href={`/docs/${d.id}`} class="block rounded-md border border-border bg-card/60 p-4 hover:border-primary/50">
-                <span class="font-bold text-accent-foreground">{d.data.title}</span>
-                <span class="block mt-1 text-sm text-muted-foreground leading-6">{d.data.description}</span>
-              </a>
-            </li>
-          ))
-        }
-        <li>
-          <a href="/agents" class="block rounded-md border border-border bg-card/60 p-4 hover:border-primary/50">
-            <span class="font-bold text-accent-foreground">Use with AI agents</span>
-            <span class="block mt-1 text-sm text-muted-foreground leading-6">Recipes for Claude Code, Codex, cron jobs and shell scripts that read and write the vault through the CLI.</span>
-          </a>
-        </li>
-      </ul>
+      <ul class="mt-8 grid gap-3 sm:grid-cols-2">{cards.map((c) => <li><Card {...c} /></li>)}</ul>
     </div>
   </div>
 </Base>

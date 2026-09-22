@@ -1,9 +1,11 @@
 ---
 import Base from "@/layouts/Base.astro";
 import FeatureMatrix from "@/components/FeatureMatrix.astro";
+import Faq from "@/components/Faq.astro";
 import { TOOLS } from "@/data/tools";
 import { md } from "@/lib/markdown";
 import { VERSION } from "@/lib/meta";
+import { breadcrumb, faqPage } from "@/lib/schema";
 
 export function getStaticPaths() {
   return TOOLS.map((tool) => ({ params: { slug: `tnotes-vs-${tool.slug}` }, props: { tool } }));
@@ -14,20 +16,18 @@ const title = `tnotes vs ${tool.name}`;
 const description = `${tool.name} or tnotes for Markdown notes? ${tool.tagline} Feature-by-feature comparison, when to pick each, and how to use both on the same files.`.slice(0, 160);
 const intro = await md(tool.intro);
 const together = tool.together ? await md(tool.together) : null;
-const chooseTool = await Promise.all(tool.chooseTool.map(md));
-const chooseTnotes = await Promise.all(tool.chooseTnotes.map(md));
-const faq = await Promise.all(tool.faq.map(async ({ q, a }) => ({ q, html: await md(a) })));
+/* Bullets are one-paragraph Markdown; unwrap the <p> so they sit inside <li>. */
+const bullet = async (s: string) => (await md(s)).replace(/^<p>|<\/p>\n?$/g, "");
+const chooseTool = await Promise.all(tool.chooseTool.map(bullet));
+const chooseTnotes = await Promise.all(tool.chooseTnotes.map(bullet));
+const faq = await Promise.all(tool.faq.map(async (f) => ({ ...f, html: await md(f.a) })));
 const related = TOOLS.filter((t) => t.slug !== tool.slug).slice(0, 6);
-const here = new URL(Astro.url.pathname, Astro.site).toString();
 
 const jsonLd = [
-  {
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Compare", item: new URL("/compare", Astro.site).toString() },
-      { "@type": "ListItem", position: 2, name: title, item: here },
-    ],
-  },
+  breadcrumb(Astro.site, [
+    { name: "Compare", href: "/compare" },
+    { name: title, href: Astro.url.pathname },
+  ]),
   {
     "@type": "Article",
     headline: `${title}: Markdown notes compared`,
@@ -35,10 +35,7 @@ const jsonLd = [
     dateModified: tool.verifiedOn,
     about: [{ "@id": `${Astro.site}#app` }, { "@type": "SoftwareApplication", name: tool.name, url: tool.url }],
   },
-  {
-    "@type": "FAQPage",
-    mainEntity: tool.faq.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a.replace(/`/g, "") } })),
-  },
+  faqPage(tool.faq),
 ];
 ---
 
@@ -67,11 +64,11 @@ const jsonLd = [
     <div class="grid md:grid-cols-2 gap-8">
       <div>
         <h2 id="choose-tool">Choose {tool.name} if</h2>
-        <ul>{chooseTool.map((html) => <li set:html={html.replace(/^<p>|<\/p>\n?$/g, "")} />)}</ul>
+        <ul>{chooseTool.map((html) => <li set:html={html} />)}</ul>
       </div>
       <div>
         <h2 id="choose-tnotes">Choose tnotes if</h2>
-        <ul>{chooseTnotes.map((html) => <li set:html={html.replace(/^<p>|<\/p>\n?$/g, "")} />)}</ul>
+        <ul>{chooseTnotes.map((html) => <li set:html={html} />)}</ul>
       </div>
     </div>
 
@@ -85,16 +82,7 @@ const jsonLd = [
     }
 
     <h2 id="faq">FAQ</h2>
-    <dl>
-      {
-        faq.map(({ q, html }) => (
-          <>
-            <dt class="font-bold text-accent-foreground mt-4">{q}</dt>
-            <dd class="text-muted-foreground mt-1 ml-0 [&>p]:my-1" set:html={html} />
-          </>
-        ))
-      }
-    </dl>
+    <div class="not-prose"><Faq items={faq} columns={1} /></div>
 
     <h2 id="sources">Sources</h2>
     <p class="text-sm text-muted-foreground">{tool.name} facts checked on {tool.verifiedOn} against:</p>

@@ -1,0 +1,42 @@
+---
+import Code from "@/components/Code.astro";
+
+/* Tabs without JavaScript: radio inputs + `:checked` sibling selectors.
+   Keyboard works (arrow keys move between radios), every panel is in the
+   HTML for crawlers, and the first method is open by default. */
+interface Props {
+  methods: { id: string; label: string; command: string; note: string }[];
+}
+const { methods } = Astro.props;
+const show = methods.map((m) => `.install-tabs:has(#install-${m.id}:checked) [data-panel="${m.id}"]`).join(",\n") + " { display: block; }";
+---
+
+<div class="install-tabs">
+  <div role="tablist" aria-label="Install method" class="flex h-8 items-center gap-1 border-b border-border">
+    {
+      methods.map((m, i) => (
+        <>
+          <input type="radio" name="install" id={`install-${m.id}`} class="sr-only peer/x" checked={i === 0} />
+          <label for={`install-${m.id}`} class="inline-flex h-8 items-center px-3 text-sm text-muted-foreground cursor-pointer -mb-px border-b border-transparent hover:text-foreground">
+            {m.label}
+          </label>
+        </>
+      ))
+    }
+  </div>
+  {
+    methods.map((m) => (
+      <section data-panel={m.id} class="pt-2">
+        <Code code={m.command} copy />
+        <p class="text-xs text-muted-foreground mt-2">{m.note}</p>
+      </section>
+    ))
+  }
+</div>
+
+<style is:global set:html={`
+  .install-tabs [data-panel] { display: none; }
+  .install-tabs input:checked + label { color: var(--primary); border-color: var(--primary); font-weight: 700; }
+  .install-tabs input:focus-visible + label { outline: 1px solid var(--ring); }
+  ${show}
+`} />

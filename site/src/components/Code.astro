@@ -1,18 +1,37 @@
 ---
 /* Static code block. `$ ` lines get a dimmed prompt, `# Title` lines are
    Markdown headings, `#tag` lines are tags. No highlighter: the content is
-   plain CLI text and a highlighter would just add bytes. */
+   plain CLI text and a highlighter would just add bytes.
+   `copy` adds a button; the click handler is one delegated listener in
+   Base.astro, so this stays JS-free per instance. Prompts and comment-only
+   lines are excluded from the copied text. */
 interface Props {
   code: string;
+  copy?: boolean;
   class?: string;
 }
-const { code, class: cls } = Astro.props;
+const { code, copy = false, class: cls } = Astro.props;
 const lines = code.split("\n");
+const copyText = lines.filter((l) => !/^#(\s|$)/.test(l)).map((l) => l.replace(/^\$ /, "")).join("\n");
 ---
 
-<pre class:list={["bg-card border border-border rounded-md p-4 overflow-x-auto text-[0.85rem] leading-6", cls]}><code>{lines.map((line) =>
-  line.startsWith("$ ") ? <span class="block"><span class="text-dim select-none">$ </span>{line.slice(2)}</span>
-  : line.startsWith("# ") ? <span class="block"><span class="text-dim"># </span><b class="text-accent-foreground">{line.slice(2)}</b></span>
-  : /^#\w/.test(line) ? <span class="block text-tag">{line}</span>
-  : <span class="block">{line}</span>
-)}</code></pre>
+<div class:list={["relative group", cls]}>
+  <pre class:list={["bg-card border border-border rounded-md p-4 overflow-x-auto text-[0.85rem] leading-6", copy && "pr-12"]}><code>{lines.map((line) =>
+    line.startsWith("$ ") ? <span class="block"><span class="text-dim select-none">$ </span>{line.slice(2)}</span>
+    : line.startsWith("# ") ? <span class="block"><span class="text-dim"># </span><b class="text-accent-foreground">{line.slice(2)}</b></span>
+    : /^#\w/.test(line) ? <span class="block text-tag">{line}</span>
+    : <span class="block">{line}</span>
+  )}</code></pre>
+  {
+    copy && (
+      <button
+        type="button"
+        data-copy={copyText}
+        aria-label="Copy to clipboard"
+        class="absolute top-2 right-2 size-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      >
+        ⧉
+      </button>
+    )
+  }
+</div>

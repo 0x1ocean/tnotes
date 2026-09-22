@@ -1,6 +1,16 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "@fontsource-variable/jetbrains-mono";
+
+/* JetBrains Mono, subset in-repo (latin, punctuation, arrows, box drawing,
+   blocks, geometric shapes; wght axis clamped to 400–700): 33 KB, one file,
+   covers the ASCII logo and the fake TUI so nothing falls back. Preloaded in
+   Base.astro. Regenerate with scripts/subset-font.py. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../assets/fonts/jetbrains-mono-400-700.woff2") format("woff2");
+}
 
 /* Nord: the palette tnotes ships with in its screenshot. Dark only. */
 :root {
@@ -31,7 +41,7 @@
 }
 
 @theme inline {
-  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-sans: var(--font-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
