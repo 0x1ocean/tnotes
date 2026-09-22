@@ -1,0 +1,18 @@
+---
+/* Static code block. `$ ` lines get a dimmed prompt, `# Title` lines are
+   Markdown headings, `#tag` lines are tags. No highlighter: the content is
+   plain CLI text and a highlighter would just add bytes. */
+interface Props {
+  code: string;
+  class?: string;
+}
+const { code, class: cls } = Astro.props;
+const lines = code.split("\n");
+---
+
+<pre class:list={["bg-card border border-border rounded-md p-4 overflow-x-auto text-[0.85rem] leading-6", cls]}><code>{lines.map((line) =>
+  line.startsWith("$ ") ? <span class="block"><span class="text-dim select-none">$ </span>{line.slice(2)}</span>
+  : line.startsWith("# ") ? <span class="block"><span class="text-dim"># </span><b class="text-accent-foreground">{line.slice(2)}</b></span>
+  : /^#\w/.test(line) ? <span class="block text-tag">{line}</span>
+  : <span class="block">{line}</span>
+)}</code></pre>

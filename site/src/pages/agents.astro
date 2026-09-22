@@ -1,0 +1,72 @@
+---
+import Base from "@/layouts/Base.astro";
+import Code from "@/components/Code.astro";
+
+const description =
+  "Use tnotes as a notes backend for AI agents: a headless CLI with JSON output, stable note ids, links and backlinks, no daemon and no API. Recipes for Claude Code, Codex, cron and shell scripts.";
+
+const howTo = {
+  "@type": "HowTo",
+  name: "Connect an AI agent to a tnotes vault",
+  step: [
+    { "@type": "HowToStep", name: "Install tnotes", text: "brew install 0x1ocean/tnotes/tnotes or cargo install tnotes." },
+    { "@type": "HowToStep", name: "Tell the agent where the vault is", text: "Add a short note to AGENTS.md / CLAUDE.md that lists the tnotes commands and the --dir of the vault." },
+    { "@type": "HowToStep", name: "Read", text: "tnotes ls --json and tnotes search <query> --json return records with id, title, tags, links, backlinks and a preview; tnotes cat <id> prints the text." },
+    { "@type": "HowToStep", name: "Write", text: "tnotes new, append and write create and modify notes; the running TUI updates live and never loses unsaved edits." },
+  ],
+};
+---
+
+<Base title="Use with AI agents" description={description} type="article" jsonLd={[howTo]}>
+  <article class="prose max-w-3xl pt-10">
+    <h1>tnotes for AI agents</h1>
+    <p class="text-muted-foreground -mt-2">{description}</p>
+
+    <h2 id="why">Why a CLI and not an MCP server</h2>
+    <p>
+      Every coding agent can already run shell commands. A CLI that prints JSON is the smallest possible integration surface: nothing to install on the agent side, nothing to keep running, nothing to authenticate. The vault is a folder of Markdown files, so an agent can also just <code>cat</code> and <code>grep</code> it — tnotes adds the index: titles, tags, links, backlinks, timestamps and fuzzy search.
+    </p>
+
+    <h2 id="commands">The five commands an agent needs</h2>
+    <Code
+      code={`$ tnotes ls --json                                  # every note: id, path, title, folder, tags, links, backlinks, created, modified, preview\n$ tnotes search "standup" --json | jq '.[0].path'   # best match first\n$ tnotes cat vault/weekly-plan                      # full text (--json adds "text")\n$ echo "- [ ] follow up with Ann" | tnotes new "Meeting notes" --tag work --stdin\n$ tnotes append meeting-notes "- [ ] send the slides"`}
+    />
+    <p>
+      A note is addressed by its id (<code>root/sub/stem</code>, as printed by <code>ls</code>), a path, or a unique file stem. The id is the same in every command. <code>--dir</code> pins the vault for one invocation, so an agent never depends on the user's config.
+    </p>
+
+    <h2 id="graph">Walking the note graph</h2>
+    <p>
+      <code>links</code> lists the <code>[[titles]]</code> a note references; <code>backlinks</code> lists the notes that reference it. A "what's related to X" prompt is one <code>ls --json</code> plus a <code>jq</code> filter:
+    </p>
+    <Code code={`$ tnotes ls --json | jq '.[] | select(.links[]? == "Weekly plan" or .backlinks[]? == "Weekly plan") | .title'\n"tnotes roadmap"\n"Meeting notes"`} />
+
+    <h2 id="safety">What the agent cannot break</h2>
+    <ul>
+      <li>A note that is open with unsaved edits in the TUI is never overwritten: the TUI keeps its text and writes a conflict copy next to the agent's version, and <code>write</code> returns an error.</li>
+      <li>A note open and clean in the TUI follows <code>write</code>/<code>append</code> live.</li>
+      <li><code>new</code> refuses a title that already exists unless <code>--duplicate</code> is passed, and rejects a blank title.</li>
+      <li><code>write</code> refuses empty input. A changed title renames the file and rewrites every <code>[[link]]</code> to it.</li>
+      <li><code>trash</code> moves to <code>.Trash/</code>; <code>restore</code> brings it back. Nothing is deleted outright.</li>
+      <li>Saves are atomic; a syncer or a second process never sees a half-written note.</li>
+    </ul>
+
+    <h2 id="claude">Claude Code / Codex: a snippet for AGENTS.md</h2>
+    <p>Drop this into the project's <code>AGENTS.md</code> or <code>CLAUDE.md</code> (adjust the path):</p>
+    <Code
+      code={`## Notes\n\nMy notes are a tnotes vault at ~/Documents/notes. Use the CLI, never edit files directly:\n\n- list:   tnotes ls --json [--tag t] [--folder f] [--limit n]\n- search: tnotes search "<query>" --json\n- read:   tnotes cat <id>\n- create: tnotes new "<Title>" [--tag t] [--folder f] --stdin   (body on stdin)\n- append: tnotes append <id> "<line>"   or   --stdin\n- rewrite: tnotes write <id> --stdin\n\nIds look like vault/sub/stem and come from ls/search. Link notes with [[Title]]; tag with #tag in the text.`}
+    />
+
+    <h2 id="cron">Daily note from cron</h2>
+    <Code code={`# crontab: create today's note at 08:00 if it does not exist\n0 8 * * * tnotes new "$(date +%F)" --tag daily --folder journal --stdin <<< "- [ ] " 2>/dev/null || true`} />
+
+    <h2 id="jq">Handy jq one-liners</h2>
+    <Code
+      code={`$ tnotes ls --json | jq -r '.[] | select(.tags | index("work")) | .id'      # ids tagged #work\n$ tnotes ls --json | jq -r 'sort_by(.modified) | reverse | .[0:5][] | .title'   # five most recent titles\n$ tnotes ls --json | jq -r '.[] | select(.preview | test("\\\\[ \\\\]")) | .title'   # notes with open tasks\n$ tnotes ls --json | jq '[.[] | .tags[]] | group_by(.) | map({(.[0]): length}) | add'   # tag counts`}
+    />
+
+    <p class="text-muted-foreground text-sm">
+      See the <a href="/docs/cli">CLI reference</a> for every flag, and <a href="/docs/sync">sync and encryption</a> for running agents against a synced vault.
+    </p>
+  </article>
+</Base>

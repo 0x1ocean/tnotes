@@ -1,0 +1,65 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "@/layouts/Base.astro";
+import DocsNav from "@/components/DocsNav.astro";
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs");
+  return docs.map((doc) => ({ params: { slug: doc.id }, props: { doc } }));
+}
+
+const { doc } = Astro.props;
+const { Content, headings } = await render(doc);
+const docs = (await getCollection("docs")).sort((a, b) => a.data.order - b.data.order);
+const i = docs.findIndex((d) => d.id === doc.id);
+const prev = docs[i - 1];
+const next = docs[i + 1];
+
+const breadcrumb = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Docs", item: new URL("/docs", Astro.site).toString() },
+    { "@type": "ListItem", position: 2, name: doc.data.title, item: new URL(Astro.url.pathname, Astro.site).toString() },
+  ],
+};
+const article = {
+  "@type": "TechArticle",
+  headline: doc.data.title,
+  description: doc.data.description,
+  about: { "@id": `${Astro.site}#app` },
+};
+---
+
+<Base title={doc.data.title} description={doc.data.description} type="article" jsonLd={[breadcrumb, article]}>
+  <div class="grid lg:grid-cols-[14rem_1fr_12rem] gap-10 pt-10">
+    <DocsNav docs={docs} current={doc.id} />
+    <article class="prose min-w-0 max-w-3xl">
+      <p class="text-xs text-muted-foreground mb-2"><a href="/docs" class="hover:text-primary">docs</a> <span class="text-dim">/</span> {doc.id}</p>
+      <h1>{doc.data.title}</h1>
+      <p class="text-muted-foreground -mt-2">{doc.data.description}</p>
+      <Content />
+      <nav class="mt-12 pt-6 border-t border-border flex justify-between text-sm" aria-label="Pagination">
+        {prev ? <a href={`/docs/${prev.id}`}>← {prev.data.title}</a> : <span />}
+        {next ? <a href={`/docs/${next.id}`}>{next.data.title} →</a> : <span />}
+      </nav>
+    </article>
+    {
+      headings.length > 0 && (
+        <aside class="hidden lg:block text-xs sticky top-16 self-start">
+          <p class="text-dim mb-2">on this page</p>
+          <ul class="space-y-1">
+            {headings
+              .filter((h) => h.depth <= 3)
+              .map((h) => (
+                <li class:list={[h.depth === 3 && "pl-3"]}>
+                  <a href={`#${h.slug}`} class="text-muted-foreground hover:text-primary">
+                    {h.text}
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </aside>
+      )
+    }
+  </div>
+</Base>

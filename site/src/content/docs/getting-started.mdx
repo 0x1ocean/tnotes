@@ -1,0 +1,77 @@
+---
+title: Getting started
+description: Install tnotes with Homebrew, cargo or a prebuilt tarball, open your first notes folder, and learn the layout of the terminal UI.
+order: 1
+---
+
+import { VERSION, RUST_VERSION } from "@/lib/meta";
+
+## Install
+
+**Homebrew** (macOS Apple Silicon/Intel, Linux x86_64/aarch64 — prebuilt, no Rust needed):
+
+```sh
+brew install 0x1ocean/tnotes/tnotes
+brew upgrade tnotes        # later
+```
+
+**Cargo** (any platform, Rust ≥ {RUST_VERSION}):
+
+```sh
+cargo install tnotes
+cargo install tnotes --force   # upgrade
+```
+
+**Prebuilt tarball** from a [release](https://github.com/0x1ocean/tnotes/releases) — targets `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl` (static, any distro), `aarch64-unknown-linux-gnu`; each has a `.sha256` next to it:
+
+<pre><code>{`V=${VERSION}; T=aarch64-apple-darwin
+curl -sL https://github.com/0x1ocean/tnotes/releases/download/v$V/tnotes-$V-$T.tar.gz | tar xz
+install tnotes-$V-$T/tnotes ~/.local/bin/`}</code></pre>
+
+**From source:**
+
+```sh
+cargo install --git https://github.com/0x1ocean/tnotes
+```
+
+The binaries are not signed. On macOS, Homebrew and `curl` downloads run as-is; a tarball saved through the browser is quarantined by Gatekeeper (`xattr -d com.apple.quarantine tnotes` clears it). Windows is untested.
+
+## First launch
+
+```sh
+tnotes                # open your configured roots
+tnotes ~/path         # add the folder to your roots (saved to config) and open it
+tnotes --dir ~/path   # use only this folder for the session; config roots are left untouched
+```
+
+The first launch asks where your notes live (default `~/Documents/notes`). Roots are saved to the [config file](/docs/config).
+
+## The layout
+
+- **Tree** (top left): `All notes`, then every root with its folders, then a `tags` section. `enter` filters the list by the selected folder or tag; `space` folds.
+- **List** (bottom left): notes matching the current filter, newest first by default. `/` searches, `s` changes the sort, `j`/`k` move.
+- **Tabs** (top right): selecting a note opens it in a *preview* tab; editing or pressing `enter` pins it. `1-9` jumps, `ctrl+w` closes.
+- **Editor** (right): the note itself, with live Markdown highlighting.
+- **Status bar** (bottom): filter, count, sort on the left; save state, word count, backlink count, key mode, help and settings on the right.
+
+On a narrow terminal the sidebar and editor become a single panel; `ctrl+b` switches between them.
+
+## Writing a note
+
+`ctrl+t` creates a note. The first line is the title (the template is `# `), and the file on disk is named after it: `# Groceries` becomes `groceries.md`. Change the title and the file is renamed; every `[[Groceries]]` link in other notes is rewritten.
+
+Type `#work` anywhere and the note is tagged; `#work/project` nests. Type `[[` and a completion popup lists your notes.
+
+A dirty note is written after `autosave_ms` (500 ms) of idle time. If a save ever fails, the text is kept under `~/.local/state/tnotes/unsaved/` and the path is shown.
+
+## Where things live
+
+| What | Path |
+|---|---|
+| Notes | the roots you chose, e.g. `~/Documents/notes` |
+| Trash | `<root>/.Trash/`, mirroring the folder layout |
+| Config | `~/.config/tnotes/config.toml` (macOS: `~/Library/Application Support/tnotes/config.toml`) |
+| Session state | `~/.local/state/tnotes/state.toml` |
+| Unsaved text after a failed save | `~/.local/state/tnotes/unsaved/` |
+
+Dot-prefixed files and directories inside a root are ignored, and nothing else is written next to your notes.

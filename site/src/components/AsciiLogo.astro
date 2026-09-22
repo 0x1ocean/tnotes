@@ -1,0 +1,21 @@
+---
+/* figlet "tnotes" (ANSI Shadow) with the shadow strokes stripped: box-drawing
+   characters render as thin outlines in most web fonts, full blocks do not.
+   Text, so it scales and stays selectable; aria-hidden because the h1 next
+   to it carries the name. */
+const logo = String.raw`
+████████╗███╗   ██╗ ██████╗ ████████╗███████╗███████╗
+╚══██╔══╝████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝██╔════╝
+   ██║   ██╔██╗ ██║██║   ██║   ██║   █████╗  ███████╗
+   ██║   ██║╚██╗██║██║   ██║   ██║   ██╔══╝  ╚════██║
+   ██║   ██║ ╚████║╚██████╔╝   ██║   ███████╗███████║
+   ╚═╝   ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚══════╝╚══════╝`
+  .trim()
+  .replace(/[╗╔╝╚═║]/g, " ");
+---
+
+<pre
+  aria-hidden="true"
+  class="tui text-primary leading-[1] select-none overflow-hidden text-[clamp(0.42rem,1.55vw,0.95rem)]"
+  set:html={logo}
+/>

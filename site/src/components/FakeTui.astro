@@ -1,0 +1,75 @@
+---
+/* The screenshot, rebuilt as text: indexable, crisp on any DPI, ~2 KB.
+   Layout mirrors the real TUI: tree + tags + list on the left, tabs + editor
+   on the right, status bar at the bottom. Built as strings and injected with
+   set:html so the compiler cannot collapse the column-aligned whitespace. */
+const d = (s: string) => `<span class="text-dim">${s}</span>`;
+const tag = (s: string) => `<span class="text-tag">${s}</span>`;
+const link = (s: string) => `${d("[[")}<u class="text-primary">${s}</u>${d("]]")}`;
+const done = (s: string) => `<span class="text-dim line-through">- [x] ${s}</span>`;
+const todo = (s: string) => `${d("- [")} ${d("]")} ${s}`;
+
+const sidebar = [
+  `<span class="text-primary">│</span>All notes               ${d("5")}`,
+  `${d("▾")} vault                 ${d("5")}`,
+  `    projects            ${d("1")}`,
+  ``,
+  d("▾ tags"),
+  `  books                 ${d("1")}`,
+  `  home                  ${d("1")}`,
+  `  planning              ${d("1")}`,
+  `  tnotes                ${d("2")}`,
+  `  travel                ${d("1")}`,
+  `${d("▾")} work                  ${d("3")}`,
+  `    tnotes              ${d("1")}`,
+  d("────────────────────────"),
+  d("/ search"),
+  `<b class="text-accent-foreground">Weekly plan</b>`,
+  d("today · #work #planning"),
+  `tnotes roadmap`,
+  d("today · #tnotes #work/tnotes"),
+  `Meeting notes`,
+  d("today · #work"),
+  `Groceries`,
+  d("today · #home"),
+  `Reading list`,
+  d("today · #books"),
+].join("\n");
+
+const editor = [
+  `${d("1 tnotes roadmap")}  <span class="bg-secondary text-accent-foreground font-bold px-1">2 Weekly plan ×</span>`,
+  ``,
+  `${d("#")} <b class="text-accent-foreground">Weekly plan</b>`,
+  ``,
+  tag("#work #planning"),
+  ``,
+  done("Review pull requests"),
+  done("Write release notes"),
+  `${todo(`Ship tnotes 1.1 ${tag("#tnotes")} — see ${link("tnotes roadmap")}`)}<span class="cursor"></span>`,
+  todo(`Book flights for ${d("**")}<b>Berlin</b>${d("**")} ${tag("#travel")}`),
+  todo(`Prep ${link("Meeting notes")}`),
+  ``,
+  `${d("&gt;")} <i class="text-muted-foreground">Keep the list short.</i>`,
+].join("\n");
+---
+
+<figure
+  class="rounded-lg border border-border bg-card shadow-2xl shadow-black/40 overflow-hidden"
+  role="img"
+  aria-label="tnotes terminal interface: a folder and tag tree, a note list, tabs, and the Weekly plan note open in the Markdown editor"
+>
+  <div class="flex items-center gap-1.5 px-3 h-8 border-b border-border text-xs text-muted-foreground" aria-hidden="true">
+    <span class="size-2.5 rounded-full bg-destructive/80"></span>
+    <span class="size-2.5 rounded-full bg-warn/80"></span>
+    <span class="size-2.5 rounded-full bg-ok/80"></span>
+    <span class="ml-3">tnotes — ~/Documents/notes</span>
+  </div>
+  <div class="tui grid grid-cols-[auto_1fr] max-md:grid-cols-1 text-[13px] leading-[1.5] min-h-[26rem]">
+    <pre class="border-r border-border max-md:hidden p-3 pr-4" aria-hidden="true" set:html={sidebar} />
+    <pre class="p-3 overflow-x-auto" set:html={editor} />
+  </div>
+  <div class="flex items-center gap-4 px-3 h-7 border-t border-border text-xs text-muted-foreground whitespace-nowrap overflow-hidden" aria-hidden="true">
+    <span><span class="bg-secondary px-1">&lt;&lt;</span> All notes · 5 · by modified</span>
+    <span class="ml-auto"><span class="text-ok">● saved</span> · 45 words · ↩ 1 · emacs · ? help · settings</span>
+  </div>
+</figure>

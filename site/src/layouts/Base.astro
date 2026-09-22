@@ -1,0 +1,89 @@
+---
+import "@/styles/global.css";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { DESCRIPTION, REPO, SITE_NAME, VERSION } from "@/lib/meta";
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Extra JSON-LD nodes merged into the page graph. */
+  jsonLd?: Record<string, unknown>[];
+  /** `article` for docs/changelog, `website` for the landing. */
+  type?: "website" | "article";
+}
+
+const { title, description = DESCRIPTION, jsonLd = [], type = "website" } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const og = new URL("/og.png", Astro.site);
+const fullTitle = title === SITE_NAME ? `${SITE_NAME} — Markdown notes in the terminal` : `${title} · ${SITE_NAME}`;
+const plausible = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
+
+const graph = [
+  {
+    "@type": "SoftwareApplication",
+    "@id": `${Astro.site}#app`,
+    name: SITE_NAME,
+    applicationCategory: "UtilitiesApplication",
+    operatingSystem: "macOS, Linux",
+    softwareVersion: VERSION,
+    description: DESCRIPTION,
+    url: Astro.site?.toString(),
+    downloadUrl: `${REPO}/releases`,
+    codeRepository: REPO,
+    license: "https://opensource.org/license/mit",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    screenshot: og.toString(),
+  },
+  {
+    "@type": "WebSite",
+    "@id": `${Astro.site}#site`,
+    name: SITE_NAME,
+    url: Astro.site?.toString(),
+  },
+  ...jsonLd,
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#242933" />
+    <meta name="color-scheme" content="dark" />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={og} />
+    <meta property="og:image:width" content="2080" />
+    <meta property="og:image:height" content="1216" />
+    <meta property="og:image:alt" content="tnotes running in a terminal: folder tree, tag list, note list and a Markdown editor with live highlighting" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={og} />
+
+    <script type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@graph": graph })} />
+    {plausible && <script defer data-domain={plausible} src="https://plausible.io/js/script.js" />}
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-card focus:px-3 focus:py-2">
+      skip to content
+    </a>
+    <Header />
+    <main id="main" class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

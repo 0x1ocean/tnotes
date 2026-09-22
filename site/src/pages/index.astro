@@ -1,0 +1,253 @@
+---
+import Base from "@/layouts/Base.astro";
+import AsciiLogo from "@/components/AsciiLogo.astro";
+import FakeTui from "@/components/FakeTui.astro";
+import FeatureCard from "@/components/FeatureCard.astro";
+import Code from "@/components/Code.astro";
+import { InstallTabs } from "@/components/InstallTabs";
+import { DESCRIPTION, REPO, RELEASES, RUST_VERSION, SITE_NAME, TAP, TARGETS, VERSION } from "@/lib/meta";
+
+const install = [
+  {
+    id: "brew",
+    label: "homebrew",
+    command: `brew install ${TAP}`,
+    note: "macOS (Apple Silicon, Intel) and Linux (x86_64, aarch64). Prebuilt — no Rust toolchain needed. Upgrade with brew upgrade tnotes.",
+  },
+  {
+    id: "cargo",
+    label: "cargo",
+    command: "cargo install tnotes",
+    note: `Any platform with Rust ≥ ${RUST_VERSION}. Upgrade with cargo install tnotes --force.`,
+  },
+  {
+    id: "curl",
+    label: "tarball",
+    command: `V=${VERSION}; T=aarch64-apple-darwin\ncurl -sL ${RELEASES}/download/v$V/tnotes-$V-$T.tar.gz | tar xz\ninstall tnotes-$V-$T/tnotes ~/.local/bin/`,
+    note: `Targets: ${TARGETS.join(", ")}. Each tarball has a .sha256 next to it.`,
+  },
+  {
+    id: "git",
+    label: "source",
+    command: `cargo install --git ${REPO}`,
+    note: "Builds the current main branch, including the vendored word-wrap fork of edtui.",
+  },
+];
+
+const faq = [
+  {
+    q: "Where are my notes stored?",
+    a: "As plain .md files in the folders you choose (default ~/Documents/notes). One file per note, named after its title. Nothing else is written next to them, so the folder is safe to sync with git, Syncthing, iCloud Drive or Dropbox.",
+  },
+  {
+    q: "Does tnotes work with Obsidian or other Markdown apps?",
+    a: "Yes. Notes are ordinary Markdown with [[wikilinks]] and #tags in the text, so the same folder can be opened by any Markdown editor. tnotes reloads live when a file changes outside the app.",
+  },
+  {
+    q: "Can I use vim keys?",
+    a: "Yes. Set editor.keys = \"vim\" in the config or in the in-app settings page (F2). The default is emacs-style keys.",
+  },
+  {
+    q: "How do AI agents use tnotes?",
+    a: "Through the headless CLI: tnotes ls, search, cat, new, append, write, trash and restore, all with --json. No daemon, no API — just files. A running TUI picks the changes up live.",
+  },
+  {
+    q: "Is it free?",
+    a: "Yes. tnotes is open source under the MIT license.",
+  },
+  {
+    q: "Does it run on Windows?",
+    a: "Untested. Prebuilt binaries ship for macOS and Linux; cargo install may work on Windows but is not supported.",
+  },
+];
+
+const faqLd = {
+  "@type": "FAQPage",
+  mainEntity: faq.map(({ q, a }) => ({
+    "@type": "Question",
+    name: q,
+    acceptedAnswer: { "@type": "Answer", text: a },
+  })),
+};
+---
+
+<Base title={SITE_NAME} description={DESCRIPTION} jsonLd={[faqLd]}>
+  <!-- hero -->
+  <section class="pt-14 sm:pt-20 pb-10">
+    <AsciiLogo />
+    <h1 class="mt-6 text-2xl sm:text-3xl font-bold text-accent-foreground max-w-3xl">
+      Terminal notes: Markdown files with folders, <span class="text-tag">#tags</span>, <span class="text-primary">[[links]]</span> and a mouse-first TUI.
+    </h1>
+    <p class="mt-4 max-w-2xl text-muted-foreground leading-7">
+      Fast, minimal note-taking that never leaves your terminal. Plain <code class="text-code">.md</code> on disk, live Markdown highlighting while you type, emacs or vim keys, and a headless JSON CLI so scripts and AI agents work the same vault.
+    </p>
+    <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
+      <a href="#install" class="inline-flex h-9 items-center px-4 rounded-md bg-primary text-primary-foreground font-bold hover:bg-primary/90">install</a>
+      <a href="/docs" class="inline-flex h-9 items-center px-4 rounded-md border border-border hover:bg-accent">read the docs</a>
+      <a href={REPO} rel="noopener" class="inline-flex h-9 items-center px-4 text-muted-foreground hover:text-primary">github ↗</a>
+      <span class="text-xs text-dim">v{VERSION} · MIT · macOS &amp; Linux</span>
+    </div>
+  </section>
+
+  <section class="pb-16" aria-labelledby="demo">
+    <h2 id="demo" class="sr-only">Interface preview</h2>
+    <FakeTui />
+    <p class="mt-3 text-xs text-muted-foreground">
+      Left: folders, tags and the note list. Right: tabs and the editor. Everything is clickable; everything has a key.
+    </p>
+  </section>
+
+  <!-- three pillars -->
+  <section class="py-12 border-t border-border grid gap-8 md:grid-cols-3" aria-labelledby="why">
+    <h2 id="why" class="sr-only">Why tnotes</h2>
+    <div>
+      <h3 class="font-bold text-primary"><span class="text-dim">01</span> Files, not a database</h3>
+      <p class="mt-2 text-sm text-muted-foreground leading-6">One <code>.md</code> per note, folders are directories, tags live in the text. Atomic saves, conflict copies instead of silent overwrites, live reload. Sync with anything.</p>
+    </div>
+    <div>
+      <h3 class="font-bold text-primary"><span class="text-dim">02</span> A real editor</h3>
+      <p class="mt-2 text-sm text-muted-foreground leading-6">Live highlighting, list continuation, checkbox toggling, word wrap, link and tag completion, backlinks. Emacs or vim keys. Mouse works everywhere.</p>
+    </div>
+    <div>
+      <h3 class="font-bold text-primary"><span class="text-dim">03</span> Scriptable by design</h3>
+      <p class="mt-2 text-sm text-muted-foreground leading-6"><code>tnotes ls --json</code> gives every note with tags, links, backlinks and timestamps. Agents and cron jobs write; your open TUI updates live.</p>
+    </div>
+  </section>
+
+  <!-- features -->
+  <section class="py-12 border-t border-border" aria-labelledby="features">
+    <h2 id="features" class="text-lg font-bold text-primary"><span class="text-dim"># </span>Features</h2>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <FeatureCard title="Plain Markdown on disk" icon={`┌─┐\n│▒│.md\n└─┘`}>
+        Atomic saves, a <code>name (conflict &lt;time&gt;).md</code> copy instead of an overwrite, and live reload when a file changes outside the app.
+      </FeatureCard>
+      <FeatureCard title="Folders and #tags" icon={`▾ work\n  └ #project`}>
+        Folders are real directories. Tags are parsed from the text, nested ones like <code>#work/project</code> included. Click a tag to filter.
+      </FeatureCard>
+      <FeatureCard title="[[Links]] and backlinks" icon={`[[note]] ←→ ↩ 3`}>
+        Completion popup after <code>[[</code>, <kbd>alt+enter</kbd> or <kbd>ctrl+click</kbd> to follow (missing targets are created), a backlinks overlay, and links rewritten on rename.
+      </FeatureCard>
+      <FeatureCard title="Tabs with a preview tab" icon={`1 roadmap  2 plan ×`}>
+        Selecting a note previews it; typing or <kbd>enter</kbd> pins it. Jump with <kbd>1–9</kbd>, cycle with <kbd>alt+.</kbd> / <kbd>alt+,</kbd>.
+      </FeatureCard>
+      <FeatureCard title="Live Markdown highlighting" icon={`# ** _ \` > - [x]`}>
+        Headings, lists, checkboxes, code, links, emphasis, quotes and tags styled as you type. Colour or monochrome.
+      </FeatureCard>
+      <FeatureCard title="Lists that behave" icon={`- [ ] ⏎\n  - [ ] ⇥`}>
+        <kbd>enter</kbd> continues a list, an empty item ends it, <kbd>tab</kbd> / <kbd>shift+tab</kbd> nest, <kbd>alt+x</kbd> or a click toggles a checkbox.
+      </FeatureCard>
+      <FeatureCard title="Emacs or vim keys" icon={`C-s  M-f  :wq`}>
+        Powered by edtui. Emacs by default; vim with normal/insert modes, <code>.</code> repeat, <code>/</code> search. Switch in settings.
+      </FeatureCard>
+      <FeatureCard title="Mouse-first" icon={`click ·· drag\n   right-click ▤`}>
+        Click to select, double-click to pin, right-click context menus, wheel scrolling, drag to select text (copied on release).
+      </FeatureCard>
+      <FeatureCard title="Fuzzy search" icon={`/ milk_ ▸ 3`}>
+        <kbd>/</kbd> searches titles and bodies with a fuzzy matcher (nucleo), combined with tag and folder filters.
+      </FeatureCard>
+      <FeatureCard title="Session restore" icon={`⟲ tabs · filter · sort`}>
+        Open tabs, filter, sort, focus and folded tree sections come back exactly as you left them.
+      </FeatureCard>
+      <FeatureCard title="In-app settings" icon={`F2 ▸ [x] wrap`}>
+        <kbd>F2</kbd> or <kbd>,</kbd> opens a settings page that writes <code>config.toml</code> for you. Theme follows your terminal palette.
+      </FeatureCard>
+      <FeatureCard title="Headless JSON CLI" icon={`$ tnotes ls --json`}>
+        <code>ls · search · cat · new · append · write · trash · restore</code>. Same ids everywhere. A running TUI picks changes up live.
+      </FeatureCard>
+      <FeatureCard title="Small terminals" icon={`[▤]  ◂  [≡]`}>
+        A single-panel layout kicks in on narrow windows; <kbd>ctrl+b</kbd> toggles the sidebar.
+      </FeatureCard>
+      <FeatureCard title="Trash, not delete" icon={`.Trash/ ↩ restore`}>
+        Every root has its own <code>.Trash/</code> mirroring the folder layout, so <kbd>u</kbd> undoes and <kbd>r</kbd> restores to where a note came from.
+      </FeatureCard>
+      <FeatureCard title="Never loses text" icon={`● saved  ▲ unsaved/`}>
+        If a save fails (disk full, permissions) the text is written under the state dir and the path is shown instead of losing it.
+      </FeatureCard>
+    </div>
+  </section>
+
+  <!-- workflows -->
+  <section class="py-12 border-t border-border" aria-labelledby="workflow">
+    <h2 id="workflow" class="text-lg font-bold text-primary"><span class="text-dim"># </span>How it feels</h2>
+    <div class="mt-6 grid gap-6 lg:grid-cols-3">
+      <div>
+        <h3 class="font-bold">Capture</h3>
+        <p class="mt-1 mb-3 text-sm text-muted-foreground leading-6"><kbd>ctrl+t</kbd>, type a title, keep typing. Autosave after 500 ms of idle.</p>
+        <Code code={`# Groceries\n\n#home\n\n- [ ] milk\n- [ ] coffee⏎\n- [ ] ▌`} />
+      </div>
+      <div>
+        <h3 class="font-bold">Link</h3>
+        <p class="mt-1 mb-3 text-sm text-muted-foreground leading-6">Type <code>[[</code>, pick from the popup, <kbd>alt+enter</kbd> to jump. Rename a note and every link follows.</p>
+        <Code code={`- [ ] Prep [[Meet▌\n         ┌────────────────┐\n         │ Meeting notes  │\n         │ Meetup ideas   │\n         └────────────────┘`} />
+      </div>
+      <div>
+        <h3 class="font-bold">Automate</h3>
+        <p class="mt-1 mb-3 text-sm text-muted-foreground leading-6">Pipe text in from anywhere. The open TUI shows it the moment the file lands.</p>
+        <Code code={`$ echo "- [ ] call Ann" \\\n  | tnotes append weekly-plan --stdin\n$ tnotes search "berlin" --json \\\n  | jq '.[0].path'\n"vault/weekly-plan.md"`} />
+      </div>
+    </div>
+  </section>
+
+  <!-- agents -->
+  <section class="py-12 border-t border-border grid gap-8 lg:grid-cols-[1fr_1.2fr] items-start" aria-labelledby="agents">
+    <div>
+      <h2 id="agents" class="text-lg font-bold text-primary"><span class="text-dim"># </span>Built for AI agents</h2>
+      <p class="mt-3 text-sm text-muted-foreground leading-6">
+        The CLI is the agent interface: no daemon, no API keys, no plugin — just files and JSON. Point an agent at your vault and let it read, search and write notes while you keep the TUI open. Edits show up live in both directions; a note with unsaved edits in the TUI is never overwritten.
+      </p>
+      <p class="mt-3 text-sm text-muted-foreground leading-6">
+        <code>links</code> and <code>backlinks</code> in the JSON let an agent walk the note graph. Ids (<code>root/sub/stem</code>) are the same in every command.
+      </p>
+      <a href="/agents" class="mt-4 inline-block text-sm text-primary hover:underline">agent recipes →</a>
+    </div>
+    <Code
+      code={`$ tnotes ls --json | jq '.[0]'\n{\n  "id": "vault/weekly-plan",\n  "path": "/home/me/notes/vault/weekly-plan.md",\n  "title": "Weekly plan",\n  "folder": "vault",\n  "tags": ["work", "planning"],\n  "links": ["tnotes roadmap", "Meeting notes"],\n  "backlinks": ["tnotes roadmap"],\n  "created": "2026-09-21T09:12:04Z",\n  "modified": "2026-09-22T08:40:11Z",\n  "preview": "#work #planning - [x] Review pull requests …"\n}`}
+    />
+  </section>
+
+  <!-- install -->
+  <section id="install" class="py-12 border-t border-border scroll-mt-16" aria-labelledby="install-h">
+    <h2 id="install-h" class="text-lg font-bold text-primary"><span class="text-dim"># </span>Install</h2>
+    <p class="mt-2 mb-6 text-sm text-muted-foreground">Current version: <span class="text-foreground">v{VERSION}</span>. Binaries are not signed; on macOS, Homebrew and curl downloads run as-is.</p>
+    <div class="max-w-3xl">
+      <InstallTabs client:visible methods={install} />
+    </div>
+    <div class="mt-8 max-w-3xl">
+      <h3 class="font-bold">Then</h3>
+      <Code code={`$ tnotes              # open your configured roots (asks where notes live on first launch)\n$ tnotes ~/notes      # add a folder to your roots and open it\n$ tnotes --dir ~/tmp  # use only this folder for the session`} />
+    </div>
+  </section>
+
+  <!-- sync -->
+  <section class="py-12 border-t border-border grid gap-8 md:grid-cols-2" aria-labelledby="sync">
+    <div>
+      <h2 id="sync" class="text-lg font-bold text-primary"><span class="text-dim"># </span>Sync and encryption are the file system's job</h2>
+      <p class="mt-3 text-sm text-muted-foreground leading-6">
+        Put a root inside Syncthing, iCloud Drive, Dropbox or a git repo. Changes from another device show up live; saves are atomic so a syncer never sees a half-written note; concurrent edits become a conflict copy, never a lost one.
+      </p>
+      <p class="mt-3 text-sm text-muted-foreground leading-6">
+        Encrypt the folder, not the notes: FileVault, an encrypted <code>.dmg</code>, <code>gocryptfs</code> or <code>fscrypt</code>. Point <code>roots</code> at the mounted path and everything keeps working.
+      </p>
+      <a href="/docs/sync" class="mt-4 inline-block text-sm text-primary hover:underline">sync recipes →</a>
+    </div>
+    <Code code={`~/.config/tnotes/config.toml\n\nroots = ["~/Sync/notes", "~/work/wiki"]\n\n[editor]\nkeys = "vim"\nautosave_ms = 500\nwidth = 72\n\n[theme]\naccent = "cyan"\ntag = "green"`} />
+  </section>
+
+  <!-- faq -->
+  <section class="py-12 border-t border-border" aria-labelledby="faq">
+    <h2 id="faq" class="text-lg font-bold text-primary"><span class="text-dim"># </span>FAQ</h2>
+    <dl class="mt-6 grid gap-6 md:grid-cols-2">
+      {
+        faq.map(({ q, a }) => (
+          <div>
+            <dt class="font-bold text-accent-foreground">
+              <span class="text-dim">? </span>
+              {q}
+            </dt>
+            <dd class="mt-1 text-sm text-muted-foreground leading-6">{a}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+</Base>

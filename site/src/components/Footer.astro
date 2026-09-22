@@ -1,0 +1,15 @@
+---
+import { REPO, VERSION } from "@/lib/meta";
+---
+
+<footer class="border-t border-border mt-24">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-xs text-muted-foreground flex flex-wrap gap-x-6 gap-y-2">
+    <span><span class="text-ok">●</span> tnotes v{VERSION} · MIT</span>
+    <a href={REPO} class="hover:text-primary" rel="noopener">source</a>
+    <a href={`${REPO}/releases`} class="hover:text-primary" rel="noopener">releases</a>
+    <a href="https://crates.io/crates/tnotes" class="hover:text-primary" rel="noopener">crates.io</a>
+    <a href={`${REPO}/issues`} class="hover:text-primary" rel="noopener">issues</a>
+    <a href="/llms.txt" class="hover:text-primary">llms.txt</a>
+    <span class="ml-auto">built with ratatui · edtui</span>
+  </div>
+</footer>

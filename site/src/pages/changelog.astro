@@ -1,0 +1,18 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "@/layouts/Base.astro";
+import { RELEASES, VERSION } from "@/lib/meta";
+
+const [entry] = await getCollection("changelog");
+const { Content } = await render(entry);
+---
+
+<Base title="Changelog" description={`What changed in each tnotes release, up to v${VERSION}. Rendered from the repository's CHANGELOG.md.`} type="article">
+  <article class="prose max-w-3xl pt-10 [&>h1]:hidden">
+    <h1 class="!block">Changelog</h1>
+    <p class="text-muted-foreground -mt-2">
+      Rendered from <code>CHANGELOG.md</code> in the repository; each section is also the <a href={RELEASES}>GitHub release</a> note.
+    </p>
+    <Content />
+  </article>
+</Base>

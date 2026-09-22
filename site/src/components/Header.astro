@@ -1,0 +1,35 @@
+---
+import { REPO, VERSION } from "@/lib/meta";
+
+const path = Astro.url.pathname;
+const nav = [
+  { href: "/docs", label: "docs" },
+  { href: "/agents", label: "agents" },
+  { href: "/changelog", label: "changelog" },
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 h-12 flex items-center gap-4 sm:gap-6 text-sm whitespace-nowrap" aria-label="Primary">
+    <a href="/" class="font-bold text-primary hover:underline">
+      <span class="text-dim">$ </span>tnotes
+    </a>
+    <ul class="flex items-center gap-3 sm:gap-6">
+      {
+        nav.map(({ href, label }) => {
+          const active = path === href || path.startsWith(href + "/");
+          return (
+            <li>
+              <a href={href} aria-current={active ? "page" : undefined} class:list={["hover:text-primary", active ? "text-foreground" : "text-muted-foreground"]}>
+                {active ? "[" : ""}{label}{active ? "]" : ""}
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+    <a href={REPO} class="ml-auto text-muted-foreground hover:text-primary" rel="noopener">
+      github <span class="text-dim hidden sm:inline">· v{VERSION}</span>
+    </a>
+  </nav>
+</header>
