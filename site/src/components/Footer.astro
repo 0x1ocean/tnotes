@@ -1,7 +1,6 @@
 ---
-import { REPO, TAP, VERSION } from "@/lib/meta";
+import { REPO, VERSION } from "@/lib/meta";
 
-const install = `brew install ${TAP}`;
 const columns = [
   {
     title: "product",
@@ -74,9 +73,6 @@ const columns = [
         · built with <a href="https://ratatui.rs" class="hover:text-primary" rel="noopener">ratatui</a> and{" "}
         <a href="https://github.com/preiter93/edtui" class="hover:text-primary" rel="noopener">edtui</a>
       </span>
-      <button type="button" data-copy={install} class="sm:ml-auto inline-flex items-center gap-2 hover:text-foreground" aria-label={`Copy: ${install}`} title="Copy install command">
-        <span class="text-dim">$</span> {install} <span class="text-dim">⧉</span>
-      </button>
     </div>
   </div>
 </footer>
