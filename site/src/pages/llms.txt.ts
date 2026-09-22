@@ -24,6 +24,8 @@ export const GET: APIRoute = async ({ site }) => {
 
 tnotes is a Rust terminal application (ratatui + edtui). Notes are plain .md files; folders are directories; #tags and [[links]] are parsed from the text. A headless CLI (ls, search, cat, new, append, write, trash, restore; all with --json) lets scripts and AI agents work on the same files while the TUI is open.
 
+Every page on this site has a Markdown twin: append \`.md\` to the path or send \`Accept: text/markdown\`. The whole site in one file: ${new URL("/llms-full.txt", site)}. Pricing (it is free, MIT): ${new URL("/pricing.md", site)}. About and contact: ${new URL("/about", site)}.
+
 ## Docs
 
 ${index}

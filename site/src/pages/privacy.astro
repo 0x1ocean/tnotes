@@ -1,0 +1,28 @@
+---
+import Base from "@/layouts/Base.astro";
+
+const description = "What tnotes and tnotes.app collect: the app sends nothing anywhere; the website uses cookie-free Vercel Web Analytics and sets no cookies.";
+---
+
+<Base title="Privacy" description={description}>
+  <article class="prose max-w-3xl pt-10">
+    <h1>Privacy</h1>
+    <p class="text-muted-foreground -mt-2">{description}</p>
+
+    <h2 id="app">The application</h2>
+    <p>
+      tnotes runs entirely on your machine. It makes no network requests: no update checks, no crash reports, no telemetry, no analytics. It writes only to the note folders you configure, to its config file (<code>~/.config/tnotes/config.toml</code>) and to its session state (<code>~/.local/state/tnotes/</code>). Nothing is written next to your notes except a <code>.Trash/</code> directory per root. If you sync or encrypt the folder, that is between you and the tool you chose; see <a href="/docs/sync">sync and encryption</a>.
+    </p>
+
+    <h2 id="site">The website</h2>
+    <p>
+      tnotes.app is a static site on Vercel. It sets no cookies and has no forms, accounts or third-party embeds. Fonts are self-hosted. Page views are counted with <a href="https://vercel.com/docs/analytics/privacy-policy">Vercel Web Analytics</a>, which records the page, referrer, country and device class without cookies or persistent identifiers; a visitor hash is derived from the request and discarded within 24 hours. There is no way to identify you from it, and there is nothing to opt out of beyond a content blocker, which the site works fine with.
+    </p>
+    <p>
+      Vercel, as the host, sees standard request logs (IP address, user agent, URL) for the purpose of serving the site; see <a href="https://vercel.com/legal/privacy-policy">Vercel's privacy policy</a>.
+    </p>
+
+    <h2 id="contact">Questions</h2>
+    <p>Open an issue on <a href="https://github.com/0x1ocean/tnotes/issues">GitHub</a>. Last updated 2026-09-22.</p>
+  </article>
+</Base>

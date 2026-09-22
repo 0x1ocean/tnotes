@@ -1,6 +1,7 @@
 ---
 import Base from "@/layouts/Base.astro";
 import { breadcrumb } from "@/lib/schema";
+import { AUTHOR_ID, RELEASE_DATE } from "@/lib/meta";
 
 /** Long-form page under a hub (/for, /guides, /glossary): breadcrumb,
  *  single h1, prose body, optional "related" slot. Adds BreadcrumbList. */
@@ -24,8 +25,10 @@ const ld = [
     "@type": articleType,
     headline: title,
     description,
-    ...(datePublished && { datePublished, dateModified: datePublished, author: { "@type": "Person", name: "0x1ocean", url: "https://github.com/0x1ocean" } }),
+    author: { "@id": AUTHOR_ID },
+    ...(datePublished ? { datePublished, dateModified: datePublished } : { dateModified: RELEASE_DATE }),
     about: { "@id": `${Astro.site}#app` },
+    isPartOf: { "@id": `${Astro.site}#site` },
   },
   ...jsonLd,
 ];

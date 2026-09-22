@@ -1,5 +1,6 @@
 ---
 import Base from "@/layouts/Base.astro";
+import { collection } from "@/lib/schema";
 import { TOOLS } from "@/data/tools";
 import { FEATURES, MARK } from "@/data/types";
 import { TNOTES } from "@/data/tnotes";
@@ -7,9 +8,10 @@ import { TNOTES } from "@/data/tnotes";
 const description = `tnotes compared with ${TOOLS.length} note-taking tools — ${TOOLS.map((t) => t.name).join(", ")}: storage format, wikilinks, CLI, sync, and how to use each alongside tnotes.`.slice(0, 160);
 
 const cols = FEATURES.filter(([k]) => ["terminal", "wikilinks", "cli", "json", "sync", "openSource"].includes(k));
+const ld = collection(Astro.site, "tnotes compared with other note-taking tools", description, TOOLS.map((t) => ({ name: `tnotes vs ${t.name}`, href: `/compare/tnotes-vs-${t.slug}` })));
 ---
 
-<Base title="Compare" description={description}>
+<Base title="Compare" description={description} jsonLd={[ld]}>
   <div class="max-w-4xl pt-10">
     <h1 class="text-2xl font-bold text-primary"><span class="text-dim"># </span>tnotes vs other note-taking tools</h1>
     <p class="mt-3 text-muted-foreground max-w-2xl leading-7">

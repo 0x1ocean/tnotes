@@ -1,12 +1,15 @@
 ---
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
+import { collection } from "@/lib/schema";
 import HubList from "@/components/HubList.astro";
 
 const all = (await getCollection("guides")).sort((a, b) => a.data.order - b.data.order);
 const items = all.map((e) => ({ href: `/guides/${e.id}`, title: e.data.title, description: e.data.description }));
+const description = "Long-form guides on terminal note-taking, Markdown wikilinks, plain-text sync and encryption, and giving AI coding agents a notes memory.";
+const ld = collection(Astro.site, "tnotes guides", description, items.map((i) => ({ name: i.title, href: i.href })));
 ---
 
-<Base title="Guides" description="Long-form guides on terminal note-taking, Markdown wikilinks, plain-text sync and encryption, and giving AI coding agents a notes memory.">
+<Base title="Guides" description={description} jsonLd={[ld]}>
   <HubList title="Guides" intro="Editorial, tool-agnostic pieces. tnotes shows up where it fits; the rest is about the approach." items={items} />
 </Base>

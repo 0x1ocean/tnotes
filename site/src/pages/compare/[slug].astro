@@ -4,7 +4,7 @@ import FeatureMatrix from "@/components/FeatureMatrix.astro";
 import Faq from "@/components/Faq.astro";
 import { TOOLS } from "@/data/tools";
 import { md } from "@/lib/markdown";
-import { VERSION } from "@/lib/meta";
+import { AUTHOR_ID, VERSION } from "@/lib/meta";
 import { breadcrumb, faqPage } from "@/lib/schema";
 
 export function getStaticPaths() {
@@ -33,6 +33,8 @@ const jsonLd = [
     headline: `${title}: Markdown notes compared`,
     description,
     dateModified: tool.verifiedOn,
+    author: { "@id": AUTHOR_ID },
+    isPartOf: { "@id": `${Astro.site}#site` },
     about: [{ "@id": `${Astro.site}#app` }, { "@type": "SoftwareApplication", name: tool.name, url: tool.url }],
   },
   faqPage(tool.faq),

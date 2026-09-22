@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
+import { collection } from "@/lib/schema";
 import Card from "@/components/Card.astro";
 import DocsNav from "@/components/DocsNav.astro";
 
@@ -13,9 +14,11 @@ const cards = [
     description: "Recipes for Claude Code, Codex, cron jobs and shell scripts that read and write the vault through the CLI.",
   },
 ];
+const description = "tnotes documentation: install, keyboard and mouse reference, config.toml, the JSON CLI, and sync/encryption recipes.";
+const ld = collection(Astro.site, "tnotes documentation", description, cards.map((c) => ({ name: c.title, href: c.href })));
 ---
 
-<Base title="Documentation" description="tnotes documentation: install, keyboard and mouse reference, config.toml, the JSON CLI, and sync/encryption recipes.">
+<Base title="Documentation" description={description} jsonLd={[ld]}>
   <div class="grid lg:grid-cols-[14rem_1fr] gap-10 pt-10">
     <DocsNav docs={docs} />
     <div class="max-w-3xl">

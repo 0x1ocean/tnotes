@@ -1,0 +1,42 @@
+---
+import Base from "@/layouts/Base.astro";
+import { AUTHOR_ID, RELEASE_DATE, REPO, VERSION } from "@/lib/meta";
+
+const description = "Who makes tnotes, why it exists, how it is licensed and funded, and how to get in touch: GitHub issues and discussions, no email list, no company.";
+const ld = [{ "@type": "AboutPage", name: "About tnotes", description, about: { "@id": `${Astro.site}#app` }, author: { "@id": AUTHOR_ID } }];
+---
+
+<Base title="About" description={description} jsonLd={ld}>
+  <article class="prose max-w-3xl pt-10">
+    <h1>About tnotes</h1>
+    <p class="text-muted-foreground -mt-2">{description}</p>
+
+    <h2 id="what">What it is</h2>
+    <p>
+      tnotes is a terminal application for Markdown notes. Notes are plain <code>.md</code> files in folders you choose; <code>#tags</code> and <code>[[links]]</code> are parsed from the text. It has a mouse-capable TUI for writing and a headless CLI that prints JSON, so scripts and AI agents can read and write the same files while the TUI is open. Current version: {VERSION}, released {RELEASE_DATE}. See the <a href="/changelog">changelog</a>.
+    </p>
+
+    <h2 id="who">Who makes it</h2>
+    <p>
+      tnotes is written and maintained by <a href={AUTHOR_ID.replace("#person", "")} rel="author">0x1ocean</a>, one person, in Rust. It started as a personal tool: a way to keep Obsidian-style linked notes without leaving a terminal or an SSH session, and to let coding agents append to those notes without a plugin or a server. There is no company behind it and no plan to make one.
+    </p>
+
+    <h2 id="license">License and funding</h2>
+    <p>
+      The source is MIT-licensed at <a href={REPO}>{REPO.replace("https://", "")}</a>. There is no paid tier, no telemetry, no account. The vendored editor component is <a href="https://github.com/preiter93/edtui">edtui</a> (MIT) with a word-wrap patch, published as <code>edtui-tnotes</code> on crates.io. Development is unfunded.
+    </p>
+
+    <h2 id="contact">Contact</h2>
+    <ul>
+      <li>Bugs and feature requests: <a href={`${REPO}/issues`}>GitHub issues</a>.</li>
+      <li>Questions and setups: <a href={`${REPO}/discussions`}>GitHub discussions</a>.</li>
+      <li>Security reports: open a <a href={`${REPO}/security/advisories/new`}>private security advisory</a> on GitHub.</li>
+    </ul>
+    <p>There is no mailing list and no social account to follow; watch the repository for releases.</p>
+
+    <h2 id="site">This website</h2>
+    <p>
+      tnotes.app is a static site built with Astro from the <code>site/</code> directory of the same repository, hosted on Vercel. Every page has a Markdown twin (send <code>Accept: text/markdown</code> or append <code>.md</code>), and the whole site is in <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a>. Comparison pages state the date their facts were checked and link their sources. See the <a href="/privacy">privacy note</a>.
+    </p>
+  </article>
+</Base>

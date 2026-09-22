@@ -3,7 +3,7 @@ import "@/styles/global.css";
 import fontUrl from "@/assets/fonts/jetbrains-mono-400-700.woff2?url";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import { DESCRIPTION, REPO, SITE_NAME, VERSION } from "@/lib/meta";
+import { AUTHOR, AUTHOR_ID, DESCRIPTION, RELEASE_DATE, REPO, SITE_NAME, VERSION } from "@/lib/meta";
 
 interface Props {
   title: string;
@@ -16,32 +16,69 @@ interface Props {
 
 const { title, description = DESCRIPTION, jsonLd = [], type = "website" } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+/* Every page gets a Markdown twin at build (integrations/markdown-twins.ts). */
+const markdown = `${Astro.url.pathname.replace(/\/$/, "") || "/index"}.md`;
 const og = new URL("/og.png", Astro.site);
 /* Brand suffix only when it fits Google's ~60-char title cutoff; long editorial titles stand alone. */
 const fullTitle = title === SITE_NAME ? `${SITE_NAME} — terminal Markdown notes with #tags, [[links]] and a CLI` : title.length > 52 ? title : `${title} · ${SITE_NAME}`;
 
+/* Entity graph on every page: the app, its source, the site, the author.
+   Pages append their own nodes (Article, FAQPage, …) and reference these by @id. */
 const graph = [
   {
     "@type": "SoftwareApplication",
     "@id": `${Astro.site}#app`,
     name: SITE_NAME,
+    alternateName: "terminal notes",
     applicationCategory: "UtilitiesApplication",
+    applicationSubCategory: "Note-taking",
     operatingSystem: "macOS, Linux",
     softwareVersion: VERSION,
+    dateModified: RELEASE_DATE,
     description: DESCRIPTION,
     url: Astro.site?.toString(),
     downloadUrl: `${REPO}/releases`,
-    codeRepository: REPO,
+    installUrl: new URL("/docs/getting-started", Astro.site).toString(),
+    releaseNotes: new URL("/changelog", Astro.site).toString(),
+    softwareHelp: { "@type": "CreativeWork", url: new URL("/docs", Astro.site).toString() },
+    featureList: [
+      "Plain Markdown files on disk",
+      "Folders as directories, #tags parsed from text",
+      "[[Wikilinks]] with completion and backlinks",
+      "Tabs with a preview tab",
+      "Live Markdown highlighting",
+      "Emacs or vim keys",
+      "Mouse support",
+      "Headless CLI with JSON output for scripts and AI agents",
+    ],
     license: "https://opensource.org/license/mit",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD", availability: "https://schema.org/InStock" },
     screenshot: og.toString(),
+    author: { "@id": AUTHOR_ID },
+    sameAs: [REPO, "https://crates.io/crates/tnotes"],
+  },
+  {
+    "@type": "SoftwareSourceCode",
+    "@id": `${REPO}#source`,
+    name: "tnotes source",
+    codeRepository: REPO,
+    programmingLanguage: "Rust",
+    runtimePlatform: "Terminal",
+    license: "https://opensource.org/license/mit",
+    targetProduct: { "@id": `${Astro.site}#app` },
+    author: { "@id": AUTHOR_ID },
   },
   {
     "@type": "WebSite",
     "@id": `${Astro.site}#site`,
     name: SITE_NAME,
     url: Astro.site?.toString(),
+    about: { "@id": `${Astro.site}#app` },
+    publisher: { "@id": AUTHOR_ID },
+    inLanguage: "en",
   },
+  AUTHOR,
   ...jsonLd,
 ];
 ---
@@ -55,6 +92,7 @@ const graph = [
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="text/markdown" href={markdown} title="Markdown version" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />

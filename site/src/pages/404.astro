@@ -1,0 +1,20 @@
+---
+import Base from "@/layouts/Base.astro";
+---
+
+<Base title="Not found" description="This page does not exist on tnotes.app. Start from the docs, the comparisons, or llms.txt.">
+  <div class="pt-20 max-w-2xl">
+    <p class="text-dim text-sm">404</p>
+    <h1 class="text-2xl font-bold text-primary mt-2">No note here</h1>
+    <p class="mt-4 text-muted-foreground leading-7">
+      The page you asked for does not exist. Nothing was moved recently; the URL is probably mistyped.
+    </p>
+    <ul class="mt-6 space-y-1 text-sm">
+      <li><a href="/" class="text-primary hover:underline">/</a> <span class="text-muted-foreground">home</span></li>
+      <li><a href="/docs" class="text-primary hover:underline">/docs</a> <span class="text-muted-foreground">documentation</span></li>
+      <li><a href="/compare" class="text-primary hover:underline">/compare</a> <span class="text-muted-foreground">tnotes vs other tools</span></li>
+      <li><a href="/sitemap-index.xml" class="text-primary hover:underline">/sitemap-index.xml</a> <span class="text-muted-foreground">every page</span></li>
+      <li><a href="/llms.txt" class="text-primary hover:underline">/llms.txt</a> <span class="text-muted-foreground">the site as one text file</span></li>
+    </ul>
+  </div>
+</Base>

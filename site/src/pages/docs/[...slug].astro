@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import DocsNav from "@/components/DocsNav.astro";
 import { breadcrumb } from "@/lib/schema";
+import { AUTHOR_ID, RELEASE_DATE, VERSION } from "@/lib/meta";
 
 export async function getStaticPaths() {
   const docs = await getCollection("docs");
@@ -24,7 +25,10 @@ const article = {
   "@type": "TechArticle",
   headline: doc.data.title,
   description: doc.data.description,
+  dateModified: RELEASE_DATE,
+  author: { "@id": AUTHOR_ID },
   about: { "@id": `${Astro.site}#app` },
+  isPartOf: { "@id": `${Astro.site}#site` },
 };
 ---
 
@@ -35,6 +39,7 @@ const article = {
       <p class="text-xs text-muted-foreground mb-2"><a href="/docs" class="hover:text-primary">docs</a> <span class="text-dim">/</span> {doc.id}</p>
       <h1>{doc.data.title}</h1>
       <p class="text-muted-foreground -mt-2">{doc.data.description}</p>
+      <p class="text-xs text-dim -mt-2">Describes tnotes v{VERSION} · updated {RELEASE_DATE}</p>
       <Content />
       <nav class="mt-12 pt-6 border-t border-border flex justify-between text-sm" aria-label="Pagination">
         {prev ? <a href={`/docs/${prev.id}`}>← {prev.data.title}</a> : <span />}

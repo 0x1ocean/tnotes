@@ -6,6 +6,7 @@
     "@astrojs/mdx": "^8.0.1",
     "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.3.3",
+    "@vercel/functions": "^3.9.9",
     "astro": "^7.3.3",
     "smol-toml": "^1.8.0",
     "tailwindcss": "^4.3.3"
@@ -25,6 +26,9 @@
   "type": "module",
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@types/turndown": "^5.0.6",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^6"
   }
 }

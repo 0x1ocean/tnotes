@@ -25,3 +25,22 @@ export function breadcrumb(site: URL | undefined, items: { name: string; href: s
     })),
   };
 }
+
+/** A hub page: CollectionPage whose mainEntity is an ItemList of its child pages. */
+export function collection(site: URL | undefined, name: string, description: string, items: { name: string; href: string }[]) {
+  return {
+    "@type": "CollectionPage",
+    name,
+    description,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: items.length,
+      itemListElement: items.map(({ name, href }, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name,
+        url: new URL(href, site).toString(),
+      })),
+    },
+  };
+}
