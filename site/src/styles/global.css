@@ -25,7 +25,7 @@
   --secondary: #3b4252;
   --secondary-foreground: #e5e9f0;
   --muted: #3b4252;
-  --muted-foreground: #8791a3;
+  --muted-foreground: #9aa4b5; /* 6.2:1 on --background, 5.4:1 on --card */
   --accent: #434c5e;
   --accent-foreground: #eceff4;
   --destructive: #bf616e;

@@ -41,7 +41,7 @@ import { faqPage } from "@/lib/schema";
       PILLARS.map((p, i) => (
         <div>
           <h3 class="font-bold text-primary">
-            <span class="text-dim">0{i + 1}</span> {p.title}
+            <span class="text-muted-foreground">0{i + 1}</span> {p.title}
           </h3>
           <p class="mt-2 text-sm text-muted-foreground leading-6" set:html={p.body} />
         </div>

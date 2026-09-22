@@ -12,7 +12,7 @@ const show = methods.map((m) => `.install-tabs:has(#install-${m.id}:checked) [da
 ---
 
 <div class="install-tabs">
-  <div role="tablist" aria-label="Install method" class="flex h-8 items-center gap-1 border-b border-border">
+  <fieldset class="flex h-8 items-center gap-1 border-b border-border"><legend class="sr-only">Install method</legend>
     {
       methods.map((m, i) => (
         <>
@@ -23,7 +23,7 @@ const show = methods.map((m) => `.install-tabs:has(#install-${m.id}:checked) [da
         </>
       ))
     }
-  </div>
+  </fieldset>
   {
     methods.map((m) => (
       <section data-panel={m.id} class="pt-2">
