@@ -186,7 +186,7 @@ impl App {
             }
         }
         let tab = &mut self.tabs[i];
-        markdown::refresh(&mut tab.editor);
+        markdown::refresh(&mut tab.editor, self.cfg.editor.highlight);
         tab.dirty = true;
         tab.last_edit = Instant::now();
         if !tab.pinned {
@@ -198,20 +198,21 @@ impl App {
     /// Replace a tab's text with what is on disk, keeping the cursor (clamped) and the
     /// editor mode so an external `append` while reading does not jump to the top.
     pub(super) fn reload_tab(&mut self, i: usize, text: &str) {
+        let mode = self.cfg.editor.highlight;
         let tab = &mut self.tabs[i];
-        Self::set_lines(&mut tab.editor, text);
+        Self::set_lines(&mut tab.editor, text, mode);
         tab.dirty = false;
     }
 
     /// `editor.lines = text` with the cursor clamped into the new text and highlights redone.
-    pub(super) fn set_lines(editor: &mut EditorState, text: &str) {
+    pub(super) fn set_lines(editor: &mut EditorState, text: &str, mode: config::Highlight) {
         let cur = editor.cursor;
         editor.lines = Lines::from(text);
         editor.selection = None;
         let row = cur.row.min(editor.lines.len().saturating_sub(1));
         let col = cur.col.min(editor.lines.len_col(row).unwrap_or(0));
         editor.cursor = Index2::new(row, col);
-        markdown::refresh(editor);
+        markdown::refresh(editor, mode);
     }
 
     pub(super) fn toggle_preview(&mut self) {

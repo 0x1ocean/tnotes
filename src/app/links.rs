@@ -106,13 +106,14 @@ impl App {
                 self.reload_tab(i, &text);
             }
         }
+        let mode = self.cfg.editor.highlight;
         for tab in self.tabs.iter_mut().filter(|t| t.dirty && t.path != saved) {
             let before = tab.editor.lines.to_string();
             let after = note::replace_links(&before, old, new);
             if after == before {
                 continue;
             }
-            Self::set_lines(&mut tab.editor, &after);
+            Self::set_lines(&mut tab.editor, &after, mode);
             n += 1;
         }
         if n > 0 {

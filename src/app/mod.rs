@@ -554,7 +554,7 @@ impl App {
         if self.keys == EditorKeys::Emacs {
             editor.mode = EditorMode::Insert;
         }
-        markdown::refresh(&mut editor);
+        markdown::refresh(&mut editor, self.cfg.editor.highlight);
         editor
     }
 

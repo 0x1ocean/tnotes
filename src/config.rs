@@ -64,6 +64,7 @@ pub struct Editor {
     /// Initial text of a new note; the cursor lands at the end of its first line.
     pub template: String,
     pub wrap: bool,
+    pub highlight: Highlight,
     /// Maximum text column width in cells; `0` = full editor width.
     pub width: u16,
     /// Where the text column sits when narrower than the editor.
@@ -79,6 +80,7 @@ impl Default for Editor {
             autosave_ms: 500,
             template: "# ".to_string(),
             wrap: true,
+            highlight: Highlight::Color,
             width: 72,
             align: Align::Left,
             cursor: CursorShape::Drawn,
@@ -98,6 +100,16 @@ pub enum Align {
     #[default]
     Left,
     Center,
+}
+
+/// Markdown highlighting: `Color` uses the theme's accent/code/tag colours, `Mono` only
+/// bold/italic/underline plus `dim`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Highlight {
+    #[default]
+    Color,
+    Mono,
 }
 
 /// Editor cursor: `Drawn` is a reversed cell painted by the editor; the others use the

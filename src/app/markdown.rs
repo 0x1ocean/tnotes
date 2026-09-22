@@ -6,8 +6,63 @@
 use edtui::{EditorState, Highlight, Index2, Lines};
 use ratatui::style::{Modifier, Style};
 
+use crate::config;
 use crate::note::is_tag_char;
-use crate::ui::theme::dim;
+use crate::ui::theme::{accent, code, dim, tag};
+
+/// Styles for one highlight mode; `highlights` never builds a `Style` itself.
+pub struct Scheme {
+    pub h1: Style,
+    pub h2: Style,
+    pub h3: Style,
+    pub code: Style,
+    pub link: Style,
+    pub tag: Style,
+    pub quote: Style,
+    pub task: Style,
+    pub dim: Style,
+}
+
+impl Scheme {
+    pub fn mono() -> Scheme {
+        let dim = Style::new().fg(dim());
+        let bold = Style::new().add_modifier(Modifier::BOLD);
+        Scheme {
+            h1: bold,
+            h2: bold,
+            h3: bold,
+            code: dim,
+            link: Style::new().add_modifier(Modifier::UNDERLINED),
+            tag: dim,
+            quote: Style::new().add_modifier(Modifier::ITALIC),
+            task: dim,
+            dim,
+        }
+    }
+
+    pub fn color() -> Scheme {
+        let dim = Style::new().fg(dim());
+        let accent = Style::new().fg(accent());
+        Scheme {
+            h1: accent.add_modifier(Modifier::BOLD),
+            h2: accent,
+            h3: accent.add_modifier(Modifier::DIM),
+            code: Style::new().fg(code()),
+            link: accent.add_modifier(Modifier::UNDERLINED),
+            tag: Style::new().fg(tag()),
+            quote: dim.add_modifier(Modifier::ITALIC),
+            task: accent,
+            dim,
+        }
+    }
+
+    pub fn for_mode(m: config::Highlight) -> Scheme {
+        match m {
+            config::Highlight::Color => Scheme::color(),
+            config::Highlight::Mono => Scheme::mono(),
+        }
+    }
+}
 
 /// `(marker end, checkbox range)` for a list line: `  - [x] text` → marker `  - ` and box `[x]`.
 pub struct ListLine {
@@ -146,8 +201,8 @@ fn is_word(c: Option<&char>) -> bool {
 }
 
 /// Inline elements: code spans, links, bold/italic, tags.
-fn inline(line: &[char], from: usize, s: &mut Sink) {
-    let dim_s = Style::new().fg(dim());
+fn inline(line: &[char], from: usize, s: &mut Sink, sc: &Scheme) {
+    let dim_s = sc.dim;
     let n = line.len();
     let mut i = from;
     while i < n {
@@ -155,7 +210,11 @@ fn inline(line: &[char], from: usize, s: &mut Sink) {
         match c {
             '`' => {
                 if let Some(j) = (i + 1..n).find(|&j| line[j] == '`') {
-                    s.push(i, j, dim_s);
+                    s.push(i, i, dim_s);
+                    if j > i + 1 {
+                        s.push(i + 1, j - 1, sc.code);
+                    }
+                    s.push(j, j, dim_s);
                     i = j + 1;
                     continue;
                 }
@@ -164,11 +223,7 @@ fn inline(line: &[char], from: usize, s: &mut Sink) {
                 // [[wikilink]]
                 if let Some((j, _, _)) = wikilink(line, i) {
                     s.push(i, i + 1, dim_s);
-                    s.push(
-                        i + 2,
-                        j - 1,
-                        Style::new().add_modifier(Modifier::UNDERLINED),
-                    );
+                    s.push(i + 2, j - 1, sc.link);
                     s.push(j, j + 1, dim_s);
                     i = j + 2;
                     continue;
@@ -179,11 +234,7 @@ fn inline(line: &[char], from: usize, s: &mut Sink) {
                     && let Some(end) = (close + 2..n).find(|&j| line[j] == ')')
                 {
                     s.push(i, i, dim_s);
-                    s.push(
-                        i + 1,
-                        close - 1,
-                        Style::new().add_modifier(Modifier::UNDERLINED),
-                    );
+                    s.push(i + 1, close - 1, sc.link);
                     s.push(close, end, dim_s);
                     i = end + 1;
                     continue;
@@ -227,7 +278,7 @@ fn inline(line: &[char], from: usize, s: &mut Sink) {
                     && body > 0
                     && !line[i + 1..i + 1 + body].iter().all(|c| c.is_ascii_digit())
                 {
-                    s.push(i, i + body, dim_s);
+                    s.push(i, i + body, sc.tag);
                     i += body + 1;
                     continue;
                 }
@@ -239,9 +290,8 @@ fn inline(line: &[char], from: usize, s: &mut Sink) {
 }
 
 /// Compute highlights for the whole buffer.
-pub fn highlights(lines: &Lines) -> Vec<Highlight> {
-    let dim_s = Style::new().fg(dim());
-    let bold = Style::new().add_modifier(Modifier::BOLD);
+pub fn highlights(lines: &Lines, sc: &Scheme) -> Vec<Highlight> {
+    let dim_s = sc.dim;
     let mut out = Vec::new();
     let mut in_fence = false;
     for (row, line) in lines.iter_row().enumerate() {
@@ -258,15 +308,20 @@ pub fn highlights(lines: &Lines) -> Vec<Highlight> {
             continue;
         }
         if in_fence {
-            s.push(0, n - 1, dim_s);
+            s.push(0, n - 1, sc.code);
             continue;
         }
-        // Headings: `#`s dim, text bold.
+        // Headings: `#`s dim, text by level.
         let hashes = line.iter().take_while(|c| **c == '#').count();
         if (1..=6).contains(&hashes) && line.get(hashes) == Some(&' ') {
             s.push(0, hashes, dim_s);
-            inline(line, hashes + 1, &mut s);
-            s.push(hashes + 1, n - 1, bold);
+            inline(line, hashes + 1, &mut s, sc);
+            let style = match hashes {
+                1 => sc.h1,
+                2 => sc.h2,
+                _ => sc.h3,
+            };
+            s.push(hashes + 1, n - 1, style);
             continue;
         }
         // Horizontal rule.
@@ -274,39 +329,41 @@ pub fn highlights(lines: &Lines) -> Vec<Highlight> {
             s.push(0, n - 1, dim_s);
             continue;
         }
-        // Blockquote: `>` dim, text italic.
+        // Blockquote: `>` dim, text `quote`.
         let indent = line.iter().take_while(|c| **c == ' ').count();
         if line.get(indent) == Some(&'>') {
             s.push(indent, indent, dim_s);
-            inline(line, indent + 1, &mut s);
-            s.push(
-                indent + 1,
-                n - 1,
-                Style::new().add_modifier(Modifier::ITALIC),
-            );
+            inline(line, indent + 1, &mut s, sc);
+            s.push(indent + 1, n - 1, sc.quote);
             continue;
         }
-        // List item: marker and checkbox dim; done items dim + crossed out.
+        // List item: marker dim, open checkbox `task`; done items dim + crossed out.
         if let Some(item) = list_line(line) {
             if item.done {
                 s.push(0, n - 1, dim_s.add_modifier(Modifier::CROSSED_OUT));
                 continue;
             }
-            s.push(indent, item.text_start.saturating_sub(1), dim_s);
-            inline(line, item.text_start, &mut s);
+            match item.checkbox {
+                Some(b) => {
+                    s.push(indent, b.saturating_sub(1), dim_s);
+                    s.push(b, b + 2, sc.task);
+                }
+                None => s.push(indent, item.text_start.saturating_sub(1), dim_s),
+            }
+            inline(line, item.text_start, &mut s, sc);
             continue;
         }
-        inline(line, 0, &mut s);
+        inline(line, 0, &mut s, sc);
         // First line without `#` is still the title.
         if row == 0 {
-            s.push(0, n - 1, bold);
+            s.push(0, n - 1, sc.h1);
         }
     }
     out
 }
 
-pub fn refresh(editor: &mut EditorState) {
-    editor.highlights = highlights(&editor.lines);
+pub fn refresh(editor: &mut EditorState, mode: config::Highlight) {
+    editor.highlights = highlights(&editor.lines, &Scheme::for_mode(mode));
 }
 
 #[cfg(test)]
@@ -356,7 +413,7 @@ mod tests {
     #[test]
     fn highlights_mark_headings_tags_and_done_tasks() {
         let lines = Lines::from("# Title #tag\n- [x] done\n");
-        let hl = highlights(&lines);
+        let hl = highlights(&lines, &Scheme::mono());
         let at = |row, start, end| {
             hl.iter()
                 .find(|h| h.start == Index2::new(row, start) && h.end == Index2::new(row, end))
@@ -386,7 +443,7 @@ mod tests {
     #[test]
     fn highlights_underline_wikilinks() {
         let lines = Lines::from("see [[B]]\n");
-        let hl = highlights(&lines);
+        let hl = highlights(&lines, &Scheme::mono());
         let at = |start, end| {
             hl.iter()
                 .find(|h| h.start == Index2::new(0, start) && h.end == Index2::new(0, end))
@@ -395,5 +452,37 @@ mod tests {
         assert_eq!(at(4, 5).style.fg, Some(dim()));
         assert!(at(6, 6).style.add_modifier.contains(Modifier::UNDERLINED));
         assert_eq!(at(7, 8).style.fg, Some(dim()));
+    }
+
+    #[test]
+    fn color_scheme_uses_theme_tokens() {
+        let lines = Lines::from("# T `c` #x [[L]]\n- [ ] t\n");
+        let hl = highlights(&lines, &Scheme::color());
+        let at = |row, start, end| {
+            hl.iter()
+                .find(|h| h.start == Index2::new(row, start) && h.end == Index2::new(row, end))
+                .unwrap_or_else(|| panic!("no range {row}:{start}..={end}"))
+        };
+        let title = at(0, 2, 15).style;
+        assert_eq!(title.fg, Some(accent()));
+        assert!(title.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(at(0, 5, 5).style.fg, Some(code()));
+        assert_eq!(at(0, 8, 9).style.fg, Some(tag()));
+        let link = at(0, 13, 13).style;
+        assert_eq!(link.fg, Some(accent()));
+        assert!(link.add_modifier.contains(Modifier::UNDERLINED));
+        assert_eq!(at(1, 0, 1).style.fg, Some(dim()));
+        assert_eq!(at(1, 2, 4).style.fg, Some(accent()));
+    }
+
+    #[test]
+    fn fenced_code_body_is_code_style() {
+        let lines = Lines::from("```\nx\n```\n");
+        let hl = highlights(&lines, &Scheme::color());
+        let body = hl
+            .iter()
+            .find(|h| h.start == Index2::new(1, 0))
+            .expect("fenced body range");
+        assert_eq!(body.style, Scheme::color().code);
     }
 }
