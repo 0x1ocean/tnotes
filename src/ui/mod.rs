@@ -27,6 +27,8 @@ pub mod theme {
         pub warn: Color,
         pub err: Color,
         pub ok: Color,
+        pub code: Color,
+        pub tag: Color,
     }
 
     impl Default for Palette {
@@ -37,6 +39,8 @@ pub mod theme {
                 warn: Color::Yellow,
                 err: Color::Red,
                 ok: Color::Green,
+                code: Color::Yellow,
+                tag: Color::Green,
             }
         }
     }
@@ -65,6 +69,12 @@ pub mod theme {
     }
     pub fn ok() -> Color {
         get().ok
+    }
+    pub fn code() -> Color {
+        get().code
+    }
+    pub fn tag() -> Color {
+        get().tag
     }
 }
 use theme::*;

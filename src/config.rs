@@ -153,6 +153,10 @@ struct RawTheme {
     err: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     ok: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tag: Option<String>,
 }
 
 fn color(raw: &Option<String>, fallback: Color) -> Result<Color> {
@@ -166,9 +170,17 @@ fn color(raw: &Option<String>, fallback: Color) -> Result<Color> {
 
 impl RawTheme {
     fn is_empty(&self) -> bool {
-        [&self.accent, &self.dim, &self.warn, &self.err, &self.ok]
-            .iter()
-            .all(|c| c.is_none())
+        [
+            &self.accent,
+            &self.dim,
+            &self.warn,
+            &self.err,
+            &self.ok,
+            &self.code,
+            &self.tag,
+        ]
+        .iter()
+        .all(|c| c.is_none())
     }
 
     fn palette(&self) -> Result<Palette> {
@@ -179,6 +191,8 @@ impl RawTheme {
             warn: color(&self.warn, d.warn)?,
             err: color(&self.err, d.err)?,
             ok: color(&self.ok, d.ok)?,
+            code: color(&self.code, d.code)?,
+            tag: color(&self.tag, d.tag)?,
         })
     }
 }
