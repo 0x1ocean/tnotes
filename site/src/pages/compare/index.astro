@@ -1,0 +1,65 @@
+---
+import Base from "@/layouts/Base.astro";
+import { TOOLS } from "@/data/tools";
+import { FEATURES } from "@/data/types";
+import { TNOTES } from "@/data/tnotes";
+
+const description = `tnotes compared with ${TOOLS.length} note-taking tools — ${TOOLS.map((t) => t.name).join(", ")}: storage format, wikilinks, CLI, sync, and how to use each alongside tnotes.`.slice(0, 160);
+const mark = { yes: ["✓", "text-ok"], partial: ["~", "text-warn"], no: ["✗", "text-dim"] } as const;
+const cols = FEATURES.filter(([k]) => ["terminal", "wikilinks", "cli", "json", "sync", "openSource"].includes(k));
+---
+
+<Base title="Compare" description={description}>
+  <div class="max-w-4xl pt-10">
+    <h1 class="text-2xl font-bold text-primary"><span class="text-dim"># </span>tnotes vs other note-taking tools</h1>
+    <p class="mt-3 text-muted-foreground max-w-2xl leading-7">
+      Honest, feature-by-feature comparisons. Most of these tools are good; the question is whether you want notes as plain files you can drive from a terminal. Each page ends with a recipe for using both on the same folder where that is possible.
+    </p>
+
+    <div class="overflow-x-auto -mx-4 sm:mx-0 mt-8">
+      <table class="w-full text-sm border-collapse min-w-[40rem]">
+        <thead>
+          <tr class="text-left text-muted-foreground">
+            <th class="font-normal py-2 px-4 sm:px-0 border-b border-border">Tool</th>
+            {cols.map(([, label]) => <th class="font-normal py-2 px-2 border-b border-border">{label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="text-primary font-bold">
+            <td class="py-2 px-4 sm:px-0 border-b border-border/60">tnotes</td>
+            {cols.map(([k]) => <td class="py-2 px-2 border-b border-border/60"><span class={mark[TNOTES[k].v][1]}>{mark[TNOTES[k].v][0]}</span></td>)}
+          </tr>
+          {
+            TOOLS.map((t) => (
+              <tr>
+                <td class="py-2 px-4 sm:px-0 border-b border-border/60">
+                  <a href={`/compare/tnotes-vs-${t.slug}`} class="text-accent-foreground hover:text-primary hover:underline">tnotes vs {t.name}</a>
+                  <span class="block text-xs text-muted-foreground">{t.category}</span>
+                </td>
+                {cols.map(([k]) => (
+                  <td class="py-2 px-2 border-b border-border/60">
+                    <span class:list={["font-bold", mark[t.features[k].v][1]]}>{mark[t.features[k].v][0]}</span>
+                  </td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="text-xs text-dim mt-2"><span class="text-ok">✓</span> yes · <span class="text-warn">~</span> partial · <span class="text-dim">✗</span> no. Full matrix, sources and dates on each page.</p>
+
+    <ul class="mt-10 grid gap-3 sm:grid-cols-2">
+      {
+        TOOLS.map((t) => (
+          <li>
+            <a href={`/compare/tnotes-vs-${t.slug}`} class="block rounded-md border border-border bg-card/60 p-4 hover:border-primary/50">
+              <span class="font-bold text-accent-foreground">tnotes vs {t.name}</span>
+              <span class="block mt-1 text-sm text-muted-foreground leading-6">{t.tagline}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Base>

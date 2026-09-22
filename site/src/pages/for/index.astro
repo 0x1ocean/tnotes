@@ -1,0 +1,12 @@
+---
+import { getCollection } from "astro:content";
+import Base from "@/layouts/Base.astro";
+import HubList from "@/components/HubList.astro";
+
+const all = (await getCollection("usecases")).sort((a, b) => a.data.order - b.data.order);
+const items = all.map((e) => ({ href: `/for/${e.id}`, title: e.data.title, description: e.data.description }));
+---
+
+<Base title="Use cases" description={`Who tnotes is for: ${all.map((e) => e.data.persona).join(", ")}. Setup, daily workflow and limits for each.`.slice(0, 160)}>
+  <HubList title="tnotes for…" intro="Concrete setups for the people who actually use terminal notes: the config, the daily loop, and what tnotes deliberately leaves to other tools." items={items} />
+</Base>

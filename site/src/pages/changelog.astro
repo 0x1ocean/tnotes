@@ -1,14 +1,12 @@
 ---
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+import { md } from "@/lib/markdown";
 import Base from "@/layouts/Base.astro";
 import { RELEASES, VERSION } from "@/lib/meta";
 
-/* The crate's CHANGELOG.md, minus its own `# Changelog` line so the page has
-   one h1. No fenced code in the file, so the default processor suffices. */
-const md = readFileSync(resolve("../CHANGELOG.md"), "utf8").replace(/^# .*\n/, "");
-const { code } = await (await createMarkdownProcessor()).render(md);
+/* The crate's CHANGELOG.md, minus its own `# Changelog` line so the page has one h1. */
+const code = await md(readFileSync(resolve("../CHANGELOG.md"), "utf8").replace(/^# .*\n/, ""));
 ---
 
 <Base title="Changelog" description={`What changed in each tnotes release, up to v${VERSION}. Rendered from the repository's CHANGELOG.md.`} type="article">

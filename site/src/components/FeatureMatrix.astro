@@ -1,0 +1,42 @@
+---
+import { FEATURES, type Cell, type FeatureKey } from "@/data/types";
+import { TNOTES } from "@/data/tnotes";
+
+interface Props {
+  name: string;
+  features: Record<FeatureKey, Cell>;
+}
+const { name, features } = Astro.props;
+const mark = { yes: ["✓", "text-ok"], partial: ["~", "text-warn"], no: ["✗", "text-dim"] } as const;
+/* Notes are plain strings with optional `code` spans; escape then inline-code them. */
+const note = (s: string) =>
+  s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!).replace(/`([^`]+)`/g, '<code class="text-code">$1</code>');
+---
+
+<div class="overflow-x-auto -mx-4 sm:mx-0">
+  <table class="w-full text-sm border-collapse min-w-[36rem]">
+    <thead>
+      <tr class="text-left text-muted-foreground">
+        <th class="font-normal py-2 px-4 sm:px-0 border-b border-border w-[30%]">Feature</th>
+        <th class="font-bold text-primary py-2 px-2 border-b border-border">tnotes</th>
+        <th class="font-bold text-accent-foreground py-2 px-2 border-b border-border">{name}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        FEATURES.map(([key, label]) => (
+          <tr class="align-top">
+            <th scope="row" class="font-normal text-muted-foreground py-2 px-4 sm:px-0 border-b border-border/60">{label}</th>
+            {[TNOTES[key], features[key]].map((cell) => (
+              <td class="py-2 px-2 border-b border-border/60">
+                <span class:list={["font-bold", mark[cell.v][1]]} aria-label={cell.v}>{mark[cell.v][0]}</span>
+                {cell.note && <span class="text-muted-foreground" set:html={" " + note(cell.note)} />}
+              </td>
+            ))}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+<p class="text-xs text-dim mt-2"><span class="text-ok">✓</span> yes · <span class="text-warn">~</span> partial or via the file system · <span class="text-dim">✗</span> no</p>

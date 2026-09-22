@@ -1,0 +1,108 @@
+---
+import Base from "@/layouts/Base.astro";
+import FeatureMatrix from "@/components/FeatureMatrix.astro";
+import { TOOLS } from "@/data/tools";
+import { md } from "@/lib/markdown";
+import { VERSION } from "@/lib/meta";
+
+export function getStaticPaths() {
+  return TOOLS.map((tool) => ({ params: { slug: `tnotes-vs-${tool.slug}` }, props: { tool } }));
+}
+
+const { tool } = Astro.props;
+const title = `tnotes vs ${tool.name}`;
+const description = `${tool.name} or tnotes for Markdown notes? ${tool.tagline} Feature-by-feature comparison, when to pick each, and how to use both on the same files.`.slice(0, 160);
+const intro = await md(tool.intro);
+const together = tool.together ? await md(tool.together) : null;
+const chooseTool = await Promise.all(tool.chooseTool.map(md));
+const chooseTnotes = await Promise.all(tool.chooseTnotes.map(md));
+const faq = await Promise.all(tool.faq.map(async ({ q, a }) => ({ q, html: await md(a) })));
+const related = TOOLS.filter((t) => t.slug !== tool.slug).slice(0, 6);
+const here = new URL(Astro.url.pathname, Astro.site).toString();
+
+const jsonLd = [
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Compare", item: new URL("/compare", Astro.site).toString() },
+      { "@type": "ListItem", position: 2, name: title, item: here },
+    ],
+  },
+  {
+    "@type": "Article",
+    headline: `${title}: Markdown notes compared`,
+    description,
+    dateModified: tool.verifiedOn,
+    about: [{ "@id": `${Astro.site}#app` }, { "@type": "SoftwareApplication", name: tool.name, url: tool.url }],
+  },
+  {
+    "@type": "FAQPage",
+    mainEntity: tool.faq.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a.replace(/`/g, "") } })),
+  },
+];
+---
+
+<Base title={title} description={description} type="article" jsonLd={jsonLd}>
+  <article class="prose max-w-3xl pt-10">
+    <p class="text-xs text-muted-foreground mb-2"><a href="/compare" class="hover:text-primary">compare</a> <span class="text-dim">/</span> {tool.slug}</p>
+    <h1>tnotes vs {tool.name}</h1>
+    <p class="text-muted-foreground -mt-2">{tool.tagline}</p>
+
+    <div class="not-prose grid sm:grid-cols-2 gap-3 my-6 text-sm">
+      <div class="rounded-md border border-border bg-card/60 p-4">
+        <p class="font-bold text-primary">tnotes</p>
+        <p class="text-muted-foreground mt-1">terminal app · macOS, Linux · MIT · free · v{VERSION}</p>
+      </div>
+      <div class="rounded-md border border-border bg-card/60 p-4">
+        <p class="font-bold text-accent-foreground"><a href={tool.url} rel="noopener" class="hover:underline">{tool.name}</a></p>
+        <p class="text-muted-foreground mt-1">{tool.category} · {tool.platforms} · {tool.license} · {tool.pricing}</p>
+      </div>
+    </div>
+
+    <Fragment set:html={intro} />
+
+    <h2 id="features">Feature comparison</h2>
+    <FeatureMatrix name={tool.name} features={tool.features} />
+
+    <div class="grid md:grid-cols-2 gap-8">
+      <div>
+        <h2 id="choose-tool">Choose {tool.name} if</h2>
+        <ul>{chooseTool.map((html) => <li set:html={html.replace(/^<p>|<\/p>\n?$/g, "")} />)}</ul>
+      </div>
+      <div>
+        <h2 id="choose-tnotes">Choose tnotes if</h2>
+        <ul>{chooseTnotes.map((html) => <li set:html={html.replace(/^<p>|<\/p>\n?$/g, "")} />)}</ul>
+      </div>
+    </div>
+
+    {
+      together && (
+        <>
+          <h2 id="together">Using {tool.name} and tnotes together</h2>
+          <Fragment set:html={together} />
+        </>
+      )
+    }
+
+    <h2 id="faq">FAQ</h2>
+    <dl>
+      {
+        faq.map(({ q, html }) => (
+          <>
+            <dt class="font-bold text-accent-foreground mt-4">{q}</dt>
+            <dd class="text-muted-foreground mt-1 ml-0 [&>p]:my-1" set:html={html} />
+          </>
+        ))
+      }
+    </dl>
+
+    <h2 id="sources">Sources</h2>
+    <p class="text-sm text-muted-foreground">{tool.name} facts checked on {tool.verifiedOn} against:</p>
+    <ul class="text-sm">{tool.sources.map((s) => <li><a href={s.url} rel="noopener nofollow">{s.label}</a></li>)}</ul>
+
+    <h2 id="related">Other comparisons</h2>
+    <ul class="not-prose grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+      {related.map((t) => <li><a href={`/compare/tnotes-vs-${t.slug}`} class="text-primary hover:underline">tnotes vs {t.name}</a></li>)}
+    </ul>
+  </article>
+</Base>

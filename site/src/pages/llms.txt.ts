@@ -1,12 +1,21 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 import { DESCRIPTION, REPO, VERSION } from "@/lib/meta";
+import { TOOLS } from "@/data/tools";
+import { GLOSSARY } from "@/data/glossary";
 
 /** https://llmstxt.org — a plain-text map of the site for AI crawlers,
  *  with the raw Markdown of every doc appended so one fetch is enough. */
 export const GET: APIRoute = async ({ site }) => {
   const docs = (await getCollection("docs")).sort((a, b) => a.data.order - b.data.order);
-  const index = docs.map((d) => `- [${d.data.title}](${new URL(`/docs/${d.id}`, site)}): ${d.data.description}`).join("\n");
+  const usecases = (await getCollection("usecases")).sort((a, b) => a.data.order - b.data.order);
+  const guides = (await getCollection("guides")).sort((a, b) => a.data.order - b.data.order);
+  const line = (href: string, title: string, desc: string) => `- [${title}](${new URL(href, site)}): ${desc}`;
+  const index = docs.map((d) => line(`/docs/${d.id}`, d.data.title, d.data.description)).join("\n");
+  const compare = TOOLS.map((t) => line(`/compare/tnotes-vs-${t.slug}`, `tnotes vs ${t.name}`, t.tagline)).join("\n");
+  const forList = usecases.map((e) => line(`/for/${e.id}`, e.data.title, e.data.description)).join("\n");
+  const guideList = guides.map((e) => line(`/guides/${e.id}`, e.data.title, e.data.description)).join("\n");
+  const glossary = GLOSSARY.map((e) => line(`/glossary/${e.slug}`, e.term, e.short)).join("\n");
   const bodies = docs.map((d) => `\n---\n\n# ${d.data.title}\n\n${d.body ?? ""}`).join("\n");
 
   const text = `# tnotes
@@ -20,6 +29,22 @@ tnotes is a Rust terminal application (ratatui + edtui). Notes are plain .md fil
 ${index}
 - [Use with AI agents](${new URL("/agents", site)}): recipes for driving the vault from Claude Code, Codex, cron and shell.
 - [Changelog](${new URL("/changelog", site)}): every release.
+
+## Comparisons
+
+${compare}
+
+## Use cases
+
+${forList}
+
+## Guides
+
+${guideList}
+
+## Glossary
+
+${glossary}
 
 ## Install
 

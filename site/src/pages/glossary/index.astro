@@ -1,0 +1,16 @@
+---
+import Base from "@/layouts/Base.astro";
+import HubList from "@/components/HubList.astro";
+import { GLOSSARY } from "@/data/glossary";
+
+const items = GLOSSARY.map((e) => ({ href: `/glossary/${e.slug}`, title: e.term, description: e.short }));
+const ld = {
+  "@type": "DefinedTermSet",
+  name: "tnotes glossary",
+  hasDefinedTerm: GLOSSARY.map((e) => ({ "@type": "DefinedTerm", name: e.term, description: e.short, url: new URL(`/glossary/${e.slug}`, Astro.site).toString() })),
+};
+---
+
+<Base title="Glossary" description={`Short definitions of note-taking terms: ${GLOSSARY.map((e) => e.term).join(", ")} — and how each one works in tnotes.`.slice(0, 160)} jsonLd={[ld]}>
+  <HubList title="Glossary" intro="The vocabulary of plain-text note-taking, one page per term, each ending with how tnotes handles it." items={items} />
+</Base>

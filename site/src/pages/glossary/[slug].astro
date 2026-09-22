@@ -1,0 +1,38 @@
+---
+import Article from "@/layouts/Article.astro";
+import { GLOSSARY } from "@/data/glossary";
+import { md } from "@/lib/markdown";
+
+export function getStaticPaths() {
+  return GLOSSARY.map((entry) => ({ params: { slug: entry.slug }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const body = await md(entry.body);
+const inTnotes = await md(entry.inTnotes);
+const related = GLOSSARY.filter((e) => entry.related.includes(e.slug));
+const definedTerm = {
+  "@type": "DefinedTerm",
+  name: entry.term,
+  description: entry.short,
+  inDefinedTermSet: { "@type": "DefinedTermSet", name: "tnotes glossary", url: new URL("/glossary", Astro.site).toString() },
+};
+---
+
+<Article title={entry.term} description={entry.short} hub={{ label: "Glossary", href: "/glossary" }} jsonLd={[definedTerm]}>
+  <Fragment set:html={body} />
+  <h2 id="in-tnotes">In tnotes</h2>
+  <Fragment set:html={inTnotes} />
+  <Fragment slot="related">
+    {
+      related.length > 0 && (
+        <>
+          <h2 id="related">Related terms</h2>
+          <ul class="not-prose flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            {related.map((e) => <li><a href={`/glossary/${e.slug}`} class="text-primary hover:underline">{e.term}</a></li>)}
+          </ul>
+        </>
+      )
+    }
+  </Fragment>
+</Article>

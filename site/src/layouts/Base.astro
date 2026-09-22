@@ -16,7 +16,8 @@ interface Props {
 const { title, description = DESCRIPTION, jsonLd = [], type = "website" } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const og = new URL("/og.png", Astro.site);
-const fullTitle = title === SITE_NAME ? `${SITE_NAME} — terminal Markdown notes with #tags, [[links]] and a CLI` : `${title} · ${SITE_NAME}`;
+/* Brand suffix only when it fits Google's ~60-char title cutoff; long editorial titles stand alone. */
+const fullTitle = title === SITE_NAME ? `${SITE_NAME} — terminal Markdown notes with #tags, [[links]] and a CLI` : title.length > 52 ? title : `${title} · ${SITE_NAME}`;
 const plausible = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
 
 const graph = [

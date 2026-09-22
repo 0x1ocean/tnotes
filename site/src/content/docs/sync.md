@@ -1,6 +1,6 @@
 ---
 title: Sync and encryption
-description: Sync tnotes with Syncthing, iCloud Drive, Dropbox or git, and encrypt the vault with FileVault, gocryptfs or fscrypt — how conflicts and atomic saves keep notes safe.
+description: Sync tnotes with Syncthing, iCloud Drive, Dropbox or git and encrypt the vault with FileVault, gocryptfs or fscrypt — how conflicts and atomic saves keep notes safe.
 order: 5
 ---
 
