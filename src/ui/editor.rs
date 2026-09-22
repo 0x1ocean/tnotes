@@ -31,12 +31,15 @@ pub(super) fn draw_editor(f: &mut Frame, app: &mut App, area: Rect, hits: &mut H
     let text = note.text.clone();
     let preview = app.active_tab().is_some_and(|t| t.preview) || in_trash;
     let wrap = app.cfg.editor.wrap;
+    let highlight = app.cfg.editor.highlight;
     let native = app.cfg.editor.cursor != config::CursorShape::Drawn;
 
     let tab = app.active_tab_mut().expect("checked above");
     if preview {
-        let md: Text =
-            tui_markdown::from_str_with_options(&text, &tui_markdown::Options::new(MdStyle));
+        let md: Text = tui_markdown::from_str_with_options(
+            &text,
+            &tui_markdown::Options::new(MdStyle(highlight)),
+        );
         let paragraph = Paragraph::new(md).wrap(Wrap { trim: false });
         // Scroll range comes from the *rendered* (wrapped) height, not the source line count,
         // and stops once the last line is on screen.
@@ -121,28 +124,42 @@ pub(super) fn draw_popup(f: &mut Frame, app: &App, area: Rect, hits: &mut Hits) 
     f.render_widget(Paragraph::new(lines), inner);
 }
 
-/// Markdown preview styles restricted to the five theme tokens.
+/// Markdown preview styles: the same colours as the editor's `markdown::Scheme` for the
+/// given highlight mode.
 #[derive(Clone, Copy, Debug)]
-struct MdStyle;
+struct MdStyle(config::Highlight);
 
 impl tui_markdown::StyleSheet for MdStyle {
     fn heading(&self, level: u8) -> Style {
-        match level {
-            1 => Style::new().fg(accent()).add_modifier(Modifier::BOLD),
-            _ => Style::new().fg(accent()),
+        match (self.0, level) {
+            (config::Highlight::Mono, _) => Style::new().add_modifier(Modifier::BOLD),
+            (_, 1) => Style::new().fg(accent()).add_modifier(Modifier::BOLD),
+            (_, 2) => Style::new().fg(accent()),
+            _ => Style::new().fg(accent()).add_modifier(Modifier::DIM),
         }
     }
     fn heading_marker(&self, level: u8) -> &str {
         if level == 1 { "" } else { "#" }
     }
     fn code(&self) -> Style {
-        Style::new().fg(dim())
+        match self.0 {
+            config::Highlight::Color => Style::new().fg(code()),
+            config::Highlight::Mono => Style::new().fg(dim()),
+        }
     }
     fn link(&self) -> Style {
-        Style::new().fg(dim()).add_modifier(Modifier::UNDERLINED)
+        let s = Style::new().add_modifier(Modifier::UNDERLINED);
+        match self.0 {
+            config::Highlight::Color => s.fg(accent()),
+            config::Highlight::Mono => s,
+        }
     }
     fn blockquote(&self) -> Style {
-        Style::new().fg(dim())
+        let s = Style::new().add_modifier(Modifier::ITALIC);
+        match self.0 {
+            config::Highlight::Color => s.fg(dim()),
+            config::Highlight::Mono => s,
+        }
     }
     fn metadata_block(&self) -> Style {
         Style::new().fg(dim())
