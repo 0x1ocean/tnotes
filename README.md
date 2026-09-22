@@ -2,6 +2,8 @@
 
 **t**erminal **notes**: minimal Markdown notes with folders, `#tags`, `[[links]]`, tabs, live highlighting, a mouse-first TUI — and a headless CLI so scripts and AI agents can work the same vault.
 
+[tnotes.app](https://tnotes.app) · [docs](https://tnotes.app/docs) · [use with AI agents](https://tnotes.app/agents) · [compare](https://tnotes.app/compare)
+
 ![CI](https://github.com/0x1ocean/tnotes/actions/workflows/ci.yml/badge.svg)
 
 ![tnotes](https://raw.githubusercontent.com/0x1ocean/tnotes/main/docs/screenshot.png)
