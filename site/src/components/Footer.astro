@@ -1,20 +1,82 @@
 ---
-import { REPO, VERSION } from "@/lib/meta";
+import { REPO, TAP, VERSION } from "@/lib/meta";
+
+const install = `brew install ${TAP}`;
+const columns = [
+  {
+    title: "product",
+    links: [
+      { href: "/#install", label: "install" },
+      { href: "/docs", label: "docs" },
+      { href: "/changelog", label: "changelog" },
+      { href: `${REPO}/releases`, label: "releases" },
+      { href: "https://crates.io/crates/tnotes", label: "crates.io" },
+    ],
+  },
+  {
+    title: "learn",
+    links: [
+      { href: "/guides", label: "guides" },
+      { href: "/compare", label: "compare" },
+      { href: "/for", label: "use cases" },
+      { href: "/glossary", label: "glossary" },
+      { href: "/agents", label: "ai agents" },
+    ],
+  },
+  {
+    title: "project",
+    links: [
+      { href: REPO, label: "github" },
+      { href: `${REPO}/issues`, label: "issues" },
+      { href: `${REPO}/discussions`, label: "discussions" },
+      { href: "/about", label: "about" },
+      { href: "/privacy", label: "privacy" },
+    ],
+  },
+  {
+    title: "machines",
+    links: [
+      { href: "/llms.txt", label: "llms.txt" },
+      { href: "/llms-full.txt", label: "llms-full.txt" },
+      { href: "/pricing.md", label: "pricing.md" },
+      { href: "/rss.xml", label: "rss.xml" },
+      { href: "/sitemap-index.xml", label: "sitemap.xml" },
+    ],
+  },
+];
 ---
 
-<footer class="border-t border-border mt-24">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-xs text-muted-foreground flex flex-wrap gap-x-6 gap-y-2">
-    <span><span class="text-ok">●</span> tnotes v{VERSION} · MIT · by <a href="https://github.com/0x1ocean" class="hover:text-primary" rel="author noopener">0x1ocean</a></span>
-    <a href={REPO} class="hover:text-primary" rel="noopener">source</a>
-    <a href={`${REPO}/releases`} class="hover:text-primary" rel="noopener">releases</a>
-    <a href="https://crates.io/crates/tnotes" class="hover:text-primary" rel="noopener">crates.io</a>
-    <a href={`${REPO}/issues`} class="hover:text-primary" rel="noopener">issues</a>
-    <a href="/for" class="hover:text-primary">use cases</a>
-    <a href="/glossary" class="hover:text-primary">glossary</a>
-    <a href="/changelog" class="hover:text-primary">changelog</a>
-    <a href="/llms.txt" class="hover:text-primary">llms.txt</a>
-    <a href="/about" class="hover:text-primary">about</a>
-    <a href="/privacy" class="hover:text-primary">privacy</a>
-    <span class="ml-auto">built with ratatui · edtui</span>
+<footer class="border-t border-border mt-24 text-sm">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+      {
+        columns.map((c) => (
+          <div>
+            <p class="text-dim text-xs mb-3"># {c.title}</p>
+            <ul class="space-y-1.5">
+              {c.links.map((l) => (
+                <li>
+                  <a href={l.href} class="text-muted-foreground hover:text-primary" rel={l.href.startsWith("http") ? "noopener" : undefined}>
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="mt-10 pt-6 border-t border-border flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-muted-foreground">
+      <span>
+        <span class="text-ok">●</span> tnotes v{VERSION} · MIT · by{" "}
+        <a href="https://github.com/0x1ocean" class="hover:text-primary" rel="author noopener">0x1ocean</a>{" "}
+        · built with <a href="https://ratatui.rs" class="hover:text-primary" rel="noopener">ratatui</a> and{" "}
+        <a href="https://github.com/preiter93/edtui" class="hover:text-primary" rel="noopener">edtui</a>
+      </span>
+      <button type="button" data-copy={install} class="sm:ml-auto inline-flex items-center gap-2 hover:text-foreground" aria-label={`Copy: ${install}`} title="Copy install command">
+        <span class="text-dim">$</span> {install} <span class="text-dim">⧉</span>
+      </button>
+    </div>
   </div>
 </footer>

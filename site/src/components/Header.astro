@@ -1,5 +1,6 @@
 ---
-import { REPO, VERSION } from "@/lib/meta";
+import { REPO, TAP } from "@/lib/meta";
+import { STARS } from "@/lib/github";
 
 const path = Astro.url.pathname;
 const nav = [
@@ -8,29 +9,63 @@ const nav = [
   { href: "/guides", label: "guides" },
   { href: "/agents", label: "agents" },
 ];
+const more = [
+  { href: "/for", label: "use cases" },
+  { href: "/glossary", label: "glossary" },
+  { href: "/changelog", label: "changelog" },
+  { href: "/about", label: "about" },
+];
+const active = (href: string) => path === href || path.startsWith(href + "/");
+const stars = !STARS ? null : STARS >= 1000 ? `${(STARS / 1000).toFixed(1)}k` : String(STARS);
+const install = `brew install ${TAP}`;
 ---
 
 <header class="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
   <nav class="max-w-6xl mx-auto px-4 sm:px-6 h-12 flex items-center gap-4 sm:gap-6 text-sm whitespace-nowrap" aria-label="Primary">
-    <a href="/" class="font-bold text-primary hover:underline">
-      <span class="text-dim">$ </span>tnotes
-    </a>
-    <ul class="flex items-center gap-3 sm:gap-6">
+    <a href="/" class="font-bold text-primary hover:underline"><span class="text-dim">$ </span>tnotes</a>
+
+    <ul class="hidden md:flex items-center gap-6">
       {
-        nav.map(({ href, label }) => {
-          const active = path === href || path.startsWith(href + "/");
-          return (
-            <li>
-              <a href={href} aria-current={active ? "page" : undefined} class:list={["hover:text-primary", active ? "text-foreground" : "text-muted-foreground"]}>
-                {active ? "[" : ""}{label}{active ? "]" : ""}
-              </a>
-            </li>
-          );
-        })
+        [...nav, ...more.slice(0, 1)].map(({ href, label }) => (
+          <li>
+            <a href={href} aria-current={active(href) ? "page" : undefined} class:list={["hover:text-primary", active(href) ? "text-foreground" : "text-muted-foreground"]}>
+              {active(href) ? `[${label}]` : label}
+            </a>
+          </li>
+        ))
       }
     </ul>
-    <a href={REPO} class="ml-auto text-muted-foreground hover:text-primary" rel="noopener">
-      github <span class="text-dim hidden sm:inline">· v{VERSION}</span>
-    </a>
+
+    <div class="ml-auto flex items-center gap-3 sm:gap-4">
+      <a href={REPO} rel="noopener" class="text-muted-foreground hover:text-primary" aria-label={stars ? `GitHub, ${STARS} stars` : "GitHub"}>
+        {stars ? <><span class="text-warn">★</span> {stars}</> : "github"}
+      </a>
+      <button
+        type="button"
+        data-copy={install}
+        class="hidden lg:inline-flex h-7 items-center gap-2 px-2.5 rounded-md border border-border text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground"
+        aria-label={`Copy: ${install}`}
+        title="Copy install command"
+      >
+        <span class="text-dim">$</span> {install} <span class="text-dim">⧉</span>
+      </button>
+
+      <details class="md:hidden relative group">
+        <summary class="list-none cursor-pointer select-none px-2 h-8 inline-flex items-center rounded-md border border-border text-muted-foreground hover:text-foreground" aria-label="Menu">
+          <span class="group-open:hidden">≡</span><span class="hidden group-open:inline">×</span>
+        </summary>
+        <ul class="absolute right-0 mt-2 w-48 rounded-md border border-border bg-card shadow-xl py-1">
+          {
+            [...nav, ...more].map(({ href, label }) => (
+              <li>
+                <a href={href} aria-current={active(href) ? "page" : undefined} class:list={["block px-3 py-1.5 hover:bg-accent", active(href) ? "text-primary" : "text-foreground"]}>
+                  {active(href) ? `[${label}]` : label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </details>
+    </div>
   </nav>
 </header>

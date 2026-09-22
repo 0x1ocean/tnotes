@@ -95,6 +95,7 @@ const graph = [
     <link rel="alternate" type="text/markdown" href={markdown} title="Markdown version" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title="tnotes releases and guides" href="/rss.xml" />
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#242933" />
     <meta name="color-scheme" content="dark" />
@@ -132,10 +133,11 @@ const graph = [
         const b = (e.target as Element).closest<HTMLButtonElement>("button[data-copy]");
         if (!b) return;
         await navigator.clipboard.writeText(b.dataset.copy ?? "");
-        b.textContent = "✓";
+        const html = b.innerHTML;
+        b.innerHTML = b.querySelector("span") ? html.replace(/⧉/, "✓") : "✓";
         b.classList.add("text-ok");
         setTimeout(() => {
-          b.textContent = "⧉";
+          b.innerHTML = html;
           b.classList.remove("text-ok");
         }, 1500);
       });
