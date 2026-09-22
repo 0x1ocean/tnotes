@@ -241,6 +241,8 @@ pub struct App {
     pending_g: bool,
     /// Last list-row click `(row, when)` for double-click detection.
     last_click: Option<(usize, Instant)>,
+    /// Sidebar separator being dragged: screen column where the sidebar starts.
+    pub sidebar_drag: Option<u16>,
     session_ready: bool,
     session_warned: bool,
     quit: bool,
@@ -339,6 +341,7 @@ impl App {
             batch_added: Vec::new(),
             pending_g: false,
             last_click: None,
+            sidebar_drag: None,
             session_ready: false,
             session_warned: false,
             quit: false,

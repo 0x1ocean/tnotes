@@ -195,6 +195,7 @@ impl App {
                     "scroll · select text (copied on release)".into(),
                 ));
                 rows.push(info("shift+drag", "the terminal's own selection".into()));
+                rows.push(info("drag the │ line", "resize the sidebar".into()));
                 rows
             }
             _ => vec![

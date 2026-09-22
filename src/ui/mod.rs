@@ -104,6 +104,8 @@ pub struct Hits {
     pub tabs: Vec<(usize, Rect)>,
     pub tab_close: Rect,
     pub tab_new: Rect,
+    /// Wide layout: the separator line and the blank column left of it.
+    pub separator: Rect,
     pub tree: Rect,
     pub tree_rows: Vec<Rect>,
     pub search: Rect,
@@ -237,7 +239,8 @@ pub fn draw(f: &mut Frame, app: &mut App) -> Hits {
         draw_navigator(f, app, nav, &mut hits);
         if show_editor {
             let sep_x = top.x + nav_w;
-            draw_vline(f, sep_x, top.y, top.height);
+            hits.separator = Rect::new(sep_x - 1, top.y, 2, top.height);
+            draw_vline(f, sep_x, top.y, top.height, app.sidebar_drag.is_some());
             editor_col = Rect::new(sep_x + 1, top.y, top.width - nav_w - 1, top.height);
         }
     }
@@ -256,8 +259,8 @@ pub fn draw(f: &mut Frame, app: &mut App) -> Hits {
     hits
 }
 
-fn draw_vline(f: &mut Frame, x: u16, y: u16, height: u16) {
-    let style = Style::new().fg(dim());
+fn draw_vline(f: &mut Frame, x: u16, y: u16, height: u16, active: bool) {
+    let style = Style::new().fg(if active { accent() } else { dim() });
     for row in y..y + height {
         f.render_widget(Span::styled("│", style), Rect::new(x, row, 1, 1));
     }

@@ -33,7 +33,7 @@ pub(super) fn draw_settings_page(
     let body = Rect::new(area.x, area.y + 1, area.width, area.height - 1);
     let sections_w = SECTIONS_W.min(body.width / 3);
     let sep_x = body.x + sections_w;
-    draw_vline(f, sep_x, area.y, area.height);
+    draw_vline(f, sep_x, area.y, area.height, false);
 
     // Sections.
     hits.settings_sections.clear();

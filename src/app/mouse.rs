@@ -48,6 +48,30 @@ impl App {
 
         let in_editor = self.hits.editor.contains(pos);
         let preview = self.active_tab().is_some_and(|t| t.preview);
+        if down && self.hits.separator.contains(pos) {
+            // The sidebar starts `sidebar_width` columns left of the separator line.
+            let start = (self.hits.separator.x + 1).saturating_sub(self.cfg.appearance.sidebar_width);
+            self.sidebar_drag = Some(start);
+            return;
+        }
+        if let Some(start) = self.sidebar_drag {
+            match m.kind {
+                MouseEventKind::Drag(MouseButton::Left) => {
+                    self.cfg.appearance.sidebar_width = m.column.saturating_sub(start).clamp(
+                        *config::SIDEBAR_WIDTH_RANGE.start(),
+                        *config::SIDEBAR_WIDTH_RANGE.end(),
+                    );
+                }
+                MouseEventKind::Up(MouseButton::Left) => {
+                    self.sidebar_drag = None;
+                    if let Err(e) = config::save(&self.cfg) {
+                        self.fail("config save", e);
+                    }
+                }
+                _ => {}
+            }
+            return;
+        }
         match m.kind {
             MouseEventKind::ScrollDown | MouseEventKind::ScrollUp => {
                 let dir: isize = if m.kind == MouseEventKind::ScrollDown {

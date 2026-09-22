@@ -508,3 +508,36 @@ fn highlight_setting_switches_live() {
     app.set_choice(SettingId::Highlight, 0);
     assert_eq!(fg_at(app, 2, 1), Some(code()));
 }
+
+#[test]
+fn dragging_the_separator_resizes_the_sidebar() {
+    use ratatui::backend::TestBackend;
+    use ratatui::crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+    let mut f = fixture(&[("a.md", "# A\n")]);
+    let app = &mut f.app;
+    let mut term = ratatui::Terminal::new(TestBackend::new(100, 20)).unwrap();
+    term.draw(|fr| app.hits = crate::ui::draw(fr, app)).unwrap();
+    let ev = |kind, col| MouseEvent {
+        kind,
+        column: col,
+        row: 5,
+        modifiers: KeyModifiers::NONE,
+    };
+    let sep = app.hits.separator.x + 1;
+    assert_eq!(sep, 32);
+    app.on_mouse(ev(MouseEventKind::Down(MouseButton::Left), sep));
+    app.on_mouse(ev(MouseEventKind::Drag(MouseButton::Left), sep + 6));
+    assert_eq!(app.cfg.appearance.sidebar_width, 38);
+    // Redraw moves the separator; the next drag is still relative to the sidebar's left edge.
+    term.draw(|fr| app.hits = crate::ui::draw(fr, app)).unwrap();
+    assert_eq!(app.hits.separator.x + 1, 38);
+    app.on_mouse(ev(MouseEventKind::Drag(MouseButton::Left), 90));
+    assert_eq!(app.cfg.appearance.sidebar_width, 48);
+    app.on_mouse(ev(MouseEventKind::Drag(MouseButton::Left), 3));
+    assert_eq!(app.cfg.appearance.sidebar_width, 24);
+    app.on_mouse(ev(MouseEventKind::Up(MouseButton::Left), 3));
+    assert!(app.sidebar_drag.is_none());
+    // Clicks off the separator do not start a drag.
+    app.on_mouse(ev(MouseEventKind::Down(MouseButton::Left), 60));
+    assert!(app.sidebar_drag.is_none());
+}
