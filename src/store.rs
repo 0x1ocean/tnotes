@@ -874,7 +874,11 @@ mod tests {
             fs::create_dir(dir.join(d)).unwrap();
         }
         fs::write(dir.join("plan.md"), "# Plan\n").unwrap();
-        fs::write(dir.join("plan.sync-conflict-20260922-101010-ABC.md"), "# Other\n").unwrap();
+        fs::write(
+            dir.join("plan.sync-conflict-20260922-101010-ABC.md"),
+            "# Other\n",
+        )
+        .unwrap();
         fs::write(dir.join(".plan.md.icloud"), "").unwrap();
         fs::write(dir.join("~syncthing~plan.md.tmp"), "x").unwrap();
         let store = load(&dir);
