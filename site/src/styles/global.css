@@ -94,6 +94,9 @@
   code {
     @apply font-mono;
   }
+  kbd {
+    @apply font-mono text-[0.85em] text-accent-foreground px-1.5 py-0.5 rounded-sm border border-dim/60 bg-card whitespace-nowrap;
+  }
 }
 
 /* Long-form documentation body. Kept as one utility so every docs page

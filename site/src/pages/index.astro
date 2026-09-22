@@ -8,6 +8,7 @@ import Card from "@/components/Card.astro";
 import Faq from "@/components/Faq.astro";
 import Section from "@/components/Section.astro";
 import InstallTabs from "@/components/InstallTabs.astro";
+import Step from "@/components/Step.astro";
 import { AGENT_JSON, CONFIG_SAMPLE, EXPLORE, FAQ, FEATURES, INSTALL, PILLARS, WORKFLOWS } from "@/data/landing";
 import { DESCRIPTION, REPO, SITE_NAME, VERSION } from "@/lib/meta";
 import { faqPage } from "@/lib/schema";
@@ -81,21 +82,34 @@ import { faqPage } from "@/lib/schema";
   </Section>
 
   <Section id="install" title="Install">
-    <p class="mb-6 text-sm text-muted-foreground max-w-2xl">
-      One binary, no account, no daemon. <span class="text-foreground">v{VERSION}</span> · macOS and Linux · MIT. Pick your system; the first option is the one to use unless you have a reason not to.
+    <p class="mb-8 text-sm text-muted-foreground max-w-2xl">
+      One binary, no account, no daemon. <span class="text-foreground">v{VERSION}</span> · macOS and Linux · MIT. Four steps, about a minute.
     </p>
-    <div class="max-w-3xl"><InstallTabs oses={INSTALL} /></div>
-    <div class="mt-10 max-w-3xl grid gap-6 md:grid-cols-2">
-      <div>
-        <h3 class="font-bold">Verify</h3>
+    <ol class="max-w-3xl relative border-l border-border ml-4 sm:ml-5">
+      <Step n="01" title="Get the binary">
+        <InstallTabs oses={INSTALL} />
+      </Step>
+      <Step n="02" title="Check it runs">
         <Code code={`$ tnotes --version\ntnotes ${VERSION}`} />
-      </div>
-      <div>
-        <h3 class="font-bold">First run</h3>
-        <Code code={`$ tnotes              # asks where notes live, default ~/Documents/notes\n$ tnotes ~/notes      # or: add this folder to your roots and open it\n$ tnotes --dir ~/tmp  # or: only this folder, for this session`} />
-      </div>
-    </div>
-    <p class="mt-4 text-xs text-muted-foreground">Next: <a href="/docs/getting-started" class="text-primary hover:underline">getting started</a> · <a href="/docs/keys" class="text-primary hover:underline">keys</a> · <a href="/docs/config" class="text-primary hover:underline">config</a>.</p>
+        <p class="mt-2 text-xs text-muted-foreground">If the shell says <code>command not found</code>, <code>~/.local/bin</code> is not on your <code>PATH</code> yet; open a new shell or add it.</p>
+      </Step>
+      <Step n="03" title="Open your notes">
+        <Code code={`$ tnotes ~/notes`} />
+        <p class="mt-2 text-xs text-muted-foreground">
+          Any folder of <code>.md</code> files works, including an existing Obsidian vault. The folder is saved as a root and opened next time by plain <code>tnotes</code>. Without an argument, the first launch asks where notes live (default <code>~/Documents/notes</code>). <code>--dir</code> opens a folder for one session only.
+        </p>
+      </Step>
+      <Step n="04" title="Learn five keys" last>
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted-foreground">
+          <li><kbd>ctrl+t</kbd> new note</li>
+          <li><kbd>/</kbd> search</li>
+          <li><kbd>[[</kbd> link a note</li>
+          <li><kbd>alt+enter</kbd> follow the link</li>
+          <li><kbd>?</kbd> everything else</li>
+        </ul>
+        <p class="mt-3 text-xs text-muted-foreground">Then: <a href="/docs/getting-started" class="text-primary hover:underline">getting started</a> · <a href="/docs/keys" class="text-primary hover:underline">all keys</a> · <a href="/docs/config" class="text-primary hover:underline">config</a> · <a href="/agents" class="text-primary hover:underline">use with AI agents</a>.</p>
+      </Step>
+    </ol>
   </Section>
 
   <Section id="sync" title="Sync and encryption are the file system's job" class="mt-4 grid gap-8 md:grid-cols-2">
