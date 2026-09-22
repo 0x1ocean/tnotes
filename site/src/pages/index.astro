@@ -81,12 +81,21 @@ import { faqPage } from "@/lib/schema";
   </Section>
 
   <Section id="install" title="Install">
-    <p class="mb-6 text-sm text-muted-foreground">Current version: <span class="text-foreground">v{VERSION}</span>. Binaries are not signed; on macOS, Homebrew and curl downloads run as-is.</p>
-    <div class="max-w-3xl"><InstallTabs methods={INSTALL} /></div>
-    <div class="mt-8 max-w-3xl">
-      <h3 class="font-bold">Then</h3>
-      <Code code={`$ tnotes              # open your configured roots (asks where notes live on first launch)\n$ tnotes ~/notes      # add a folder to your roots and open it\n$ tnotes --dir ~/tmp  # use only this folder for the session`} />
+    <p class="mb-6 text-sm text-muted-foreground max-w-2xl">
+      One binary, no account, no daemon. <span class="text-foreground">v{VERSION}</span> · macOS and Linux · MIT. Pick your system; the first option is the one to use unless you have a reason not to.
+    </p>
+    <div class="max-w-3xl"><InstallTabs oses={INSTALL} /></div>
+    <div class="mt-10 max-w-3xl grid gap-6 md:grid-cols-2">
+      <div>
+        <h3 class="font-bold">Verify</h3>
+        <Code code={`$ tnotes --version\ntnotes ${VERSION}`} />
+      </div>
+      <div>
+        <h3 class="font-bold">First run</h3>
+        <Code code={`$ tnotes              # asks where notes live, default ~/Documents/notes\n$ tnotes ~/notes      # or: add this folder to your roots and open it\n$ tnotes --dir ~/tmp  # or: only this folder, for this session`} />
+      </div>
     </div>
+    <p class="mt-4 text-xs text-muted-foreground">Next: <a href="/docs/getting-started" class="text-primary hover:underline">getting started</a> · <a href="/docs/keys" class="text-primary hover:underline">keys</a> · <a href="/docs/config" class="text-primary hover:underline">config</a>.</p>
   </Section>
 
   <Section id="sync" title="Sync and encryption are the file system's job" class="mt-4 grid gap-8 md:grid-cols-2">

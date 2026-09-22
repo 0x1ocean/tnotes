@@ -1,29 +1,66 @@
-import { RELEASES, REPO, RUST_VERSION, TAP, TARGETS, VERSION } from "@/lib/meta";
+import { RELEASES, REPO, RUST_VERSION, TAP, VERSION } from "@/lib/meta";
 
-export const INSTALL = [
+const tarball = (target: string) =>
+  `$ V=${VERSION}; T=${target}\n$ curl -sL ${RELEASES}/download/v$V/tnotes-$V-$T.tar.gz | tar xz\n$ install tnotes-$V-$T/tnotes ~/.local/bin/`;
+
+export type InstallMethod = { title: string; command: string; note: string; upgrade?: string };
+export type InstallOs = {
+  id: string;
+  label: string;
+  /** `navigator.platform` prefixes that select this tab; first OS is the no-JS default. */
+  platforms: string[];
+  recommended: InstallMethod;
+  alternatives: InstallMethod[];
+  caveat?: string;
+};
+
+/** Grouped by OS, one recommended path each, alternatives below it. */
+export const INSTALL: InstallOs[] = [
   {
-    id: "brew",
-    label: "homebrew",
-    command: `$ brew install ${TAP}`,
-    note: "macOS (Apple Silicon, Intel) and Linux (x86_64, aarch64). Prebuilt, no Rust toolchain needed. Upgrade with brew upgrade tnotes.",
+    id: "linux",
+    label: "Linux",
+    platforms: ["Linux"],
+    recommended: {
+      title: "Static binary, any distro",
+      command: tarball("x86_64-unknown-linux-musl"),
+      note: "musl build: no glibc version to match, works on Debian, Arch, Alpine, NixOS, a fresh container. On aarch64 (Raspberry Pi, Graviton): T=aarch64-unknown-linux-gnu.",
+      upgrade: "re-run with the new version number",
+    },
+    alternatives: [
+      { title: "Homebrew on Linux", command: `$ brew install ${TAP}`, note: "x86_64 and aarch64. Prebuilt, no Rust needed.", upgrade: "brew upgrade tnotes" },
+      { title: "cargo", command: "$ cargo install tnotes", note: `Builds from crates.io. Rust ≥ ${RUST_VERSION}.`, upgrade: "cargo install tnotes --force" },
+    ],
+    caveat: "No AUR, deb or rpm packages yet; the static tarball is the portable answer until then.",
   },
   {
-    id: "cargo",
-    label: "cargo",
-    command: "$ cargo install tnotes",
-    note: `Any platform with Rust ≥ ${RUST_VERSION}. Upgrade with cargo install tnotes --force.`,
+    id: "macos",
+    label: "macOS",
+    platforms: ["Mac"],
+    recommended: {
+      title: "Homebrew",
+      command: `$ brew install ${TAP}`,
+      note: "Apple Silicon and Intel. Prebuilt bottle, no Rust needed.",
+      upgrade: "brew upgrade tnotes",
+    },
+    alternatives: [
+      { title: "Prebuilt tarball, Apple Silicon", command: tarball("aarch64-apple-darwin"), note: "Intel: T=x86_64-apple-darwin. A .sha256 sits next to every tarball.", upgrade: "re-run with the new version number" },
+      { title: "cargo", command: "$ cargo install tnotes", note: `Builds from crates.io. Rust ≥ ${RUST_VERSION}.`, upgrade: "cargo install tnotes --force" },
+    ],
+    caveat: "Binaries are not signed. Homebrew and curl downloads run as-is; a tarball saved through the browser is quarantined by Gatekeeper: xattr -d com.apple.quarantine tnotes clears it.",
   },
   {
-    id: "curl",
-    label: "tarball",
-    command: `$ V=${VERSION}; T=aarch64-apple-darwin\n$ curl -sL ${RELEASES}/download/v$V/tnotes-$V-$T.tar.gz | tar xz\n$ install tnotes-$V-$T/tnotes ~/.local/bin/`,
-    note: `Targets: ${TARGETS.join(", ")}. Each tarball has a .sha256 next to it.`,
-  },
-  {
-    id: "git",
-    label: "source",
-    command: `$ cargo install --git ${REPO}`,
-    note: "Builds the current main branch, including the vendored word-wrap fork of edtui.",
+    id: "source",
+    label: "From source",
+    platforms: [],
+    recommended: {
+      title: "cargo, from crates.io",
+      command: "$ cargo install tnotes",
+      note: `Any platform with Rust ≥ ${RUST_VERSION}. Windows is untested.`,
+      upgrade: "cargo install tnotes --force",
+    },
+    alternatives: [
+      { title: "Current main branch", command: `$ cargo install --git ${REPO}`, note: "Includes the vendored word-wrap fork of edtui. May be ahead of the changelog.", upgrade: "re-run" },
+    ],
   },
 ];
 

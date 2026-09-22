@@ -1,42 +1,81 @@
 ---
 import Code from "@/components/Code.astro";
+import type { InstallOs } from "@/data/landing";
 
-/* Tabs without JavaScript: radio inputs + `:checked` sibling selectors.
-   Keyboard works (arrow keys move between radios), every panel is in the
-   HTML for crawlers, and the first method is open by default. */
+/* OS tabs without JavaScript (radio + :has). A 6-line script preselects the
+   visitor's OS from navigator.platform; without it the first OS is open.
+   Every panel is in the HTML, so crawlers and the Markdown twin see all of it. */
 interface Props {
-  methods: { id: string; label: string; command: string; note: string }[];
+  oses: InstallOs[];
 }
-const { methods } = Astro.props;
-const show = methods.map((m) => `.install-tabs:has(#install-${m.id}:checked) [data-panel="${m.id}"]`).join(",\n") + " { display: block; }";
+const { oses } = Astro.props;
+const show = oses.map((o) => `.install:has(#os-${o.id}:checked) [data-os="${o.id}"]`).join(",\n") + " { display: block; }";
+const platforms = JSON.stringify(Object.fromEntries(oses.flatMap((o) => o.platforms.map((p) => [p, o.id]))));
 ---
 
-<div class="install-tabs">
-  <fieldset class="flex h-8 items-center gap-1 border-b border-border"><legend class="sr-only">Install method</legend>
+<div class="install">
+  <fieldset class="flex items-center gap-2">
+    <legend class="sr-only">Operating system</legend>
     {
-      methods.map((m, i) => (
+      oses.map((o, i) => (
         <>
-          <input type="radio" name="install" id={`install-${m.id}`} class="sr-only peer/x" checked={i === 0} />
-          <label for={`install-${m.id}`} class="inline-flex h-8 items-center px-3 text-sm text-muted-foreground cursor-pointer -mb-px border-b border-transparent hover:text-foreground">
-            {m.label}
+          <input type="radio" name="os" id={`os-${o.id}`} class="sr-only" checked={i === 0} data-platforms={o.platforms.join(",")} />
+          <label for={`os-${o.id}`} class="inline-flex h-9 items-center px-4 rounded-md border border-border text-sm text-muted-foreground cursor-pointer hover:text-foreground hover:border-primary/50">
+            {o.label}
           </label>
         </>
       ))
     }
   </fieldset>
+
   {
-    methods.map((m) => (
-      <section data-panel={m.id} class="pt-2">
-        <Code code={m.command} copy />
-        <p class="text-xs text-muted-foreground mt-2">{m.note}</p>
+    oses.map((o) => (
+      <section data-os={o.id} class="mt-5">
+        <div class="rounded-lg border border-primary/60 bg-card/60 p-4 sm:p-5">
+          <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h3 class="font-bold text-accent-foreground">
+              <span class="text-primary">▸</span> {o.recommended.title}
+            </h3>
+            <span class="text-xs text-primary">recommended</span>
+          </div>
+          <Code code={o.recommended.command} copy />
+          <p class="text-xs text-muted-foreground mt-2">{o.recommended.note}</p>
+          {o.recommended.upgrade && <p class="text-xs text-dim mt-1">upgrade: {o.recommended.upgrade}</p>}
+        </div>
+
+        <details class="mt-3 group">
+          <summary class="cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground list-none">
+            <span class="text-dim group-open:hidden">▸</span><span class="text-dim hidden group-open:inline">▾</span> other ways on {o.label}{" "}
+            <span class="text-dim">({o.alternatives.map((a) => a.title.split(",")[0]).join(", ")})</span>
+          </summary>
+          <div class="mt-3 grid gap-3">
+            {o.alternatives.map((a) => (
+              <div class="rounded-md border border-border p-4">
+                <h4 class="text-sm font-bold text-accent-foreground mb-2">{a.title}</h4>
+                <Code code={a.command} copy />
+                <p class="text-xs text-muted-foreground mt-2">{a.note}</p>
+                {a.upgrade && <p class="text-xs text-dim mt-1">upgrade: {a.upgrade}</p>}
+              </div>
+            ))}
+          </div>
+        </details>
+        {o.caveat && <p class="mt-3 text-xs text-dim">{o.caveat}</p>}
       </section>
     ))
   }
 </div>
 
 <style is:global set:html={`
-  .install-tabs [data-panel] { display: none; }
-  .install-tabs input:checked + label { color: var(--primary); border-color: var(--primary); font-weight: 700; }
-  .install-tabs input:focus-visible + label { outline: 1px solid var(--ring); }
+  .install [data-os] { display: none; }
+  .install input:checked + label { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); font-weight: 700; }
+  .install input:focus-visible + label { outline: 1px solid var(--ring); outline-offset: 2px; }
   ${show}
 `} />
+
+<script is:inline define:vars={{ platforms }}>
+  /* Progressive enhancement: open the tab for the visitor's OS. */
+  const p = navigator.platform || "";
+  const id = Object.entries(platforms).find(([prefix]) => p.startsWith(prefix))?.[1];
+  const el = id && document.getElementById("os-" + id);
+  if (el) el.checked = true;
+</script>
