@@ -22,7 +22,7 @@ export const AUTHOR = {
   "@id": AUTHOR_ID,
   name: "0x1ocean",
   url: "https://github.com/0x1ocean",
-  sameAs: ["https://github.com/0x1ocean", "https://crates.io/users/0x1ocean"],
+  sameAs: ["https://github.com/0x1ocean", "https://crates.io/users/0x1ocean", "https://romaocean.com", "https://0x1ocean.com"],
 };
 
 export const VERSION = cargo.package.version;
