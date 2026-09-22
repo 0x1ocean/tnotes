@@ -106,10 +106,19 @@ jobs:
           (cd "$RUNNER_TEMP" && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256")
           echo "ASSET=$RUNNER_TEMP/$name.tar.gz" >> "$GITHUB_ENV"
 
-      - name: Upload
+      # Never overwrite a published asset: builds are not byte-reproducible, and the
+      # Homebrew formula pins the checksum of the first upload.
+      - name: Upload (only if missing)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v$VERSION" "$ASSET" "$ASSET.sha256" --clobber
+        run: |
+          set -eu
+          name=$(basename "$ASSET")
+          if gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qx "$name"; then
+            echo "$name already published; keeping it"
+          else
+            gh release upload "v$VERSION" "$ASSET" "$ASSET.sha256"
+          fi
 
   publish:
     needs: [check, build]
