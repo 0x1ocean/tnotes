@@ -189,6 +189,13 @@ Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/s
 - Dot-prefixed files and directories are ignored.
 - Nothing else is written next to your notes, so the folder is safe to sync with git, Syncthing or any file sync.
 
+## Sync and encryption
+
+Notes are plain files, so syncing and encryption are the file system's job; tnotes only needs to behave well underneath.
+
+- **Sync**: put a root inside a folder synced by Syncthing, iCloud Drive, Dropbox, or keep it in a git repository. Changes from another device show up live (the watcher reloads clean tabs, dirty tabs keep their text). Saves are atomic, so a syncer never sees a half-written note. When the same note is edited on two devices, tnotes never overwrites the other side: it keeps its own text as `name (conflict <time>).md`; Syncthing's `name.sync-conflict-*.md` and Dropbox's `name (conflicted copy).md` are listed as ordinary notes so nothing is hidden from you. Dot-prefixed entries (`.stfolder`, `.git`, `.stversions`, iCloud `.name.md.icloud` placeholders) are ignored.
+- **Encryption**: encrypt the folder, not the notes — FileVault or an encrypted `.dmg` on macOS, `gocryptfs`/`fscrypt` on Linux — and point `roots` at the mounted, decrypted path. Everything (links, search, the CLI) keeps working, and a syncer only ever sees ciphertext.
+
 ## Vendored edtui
 
 `vendor/edtui` is [edtui](https://github.com/preiter93/edtui) 0.11.7 (MIT, Philipp Reiter) with a word-wrap patch (`src/view/line_wrapper.rs`, cursor mapping in `src/view/internal.rs`, scrolling in `src/state/view.rs`); upstream wraps by character only. It is published as [`edtui-tnotes`](https://crates.io/crates/edtui-tnotes) so `cargo install tnotes` works; the workspace builds it from `vendor/` via a `path` dependency.

@@ -868,6 +868,24 @@ mod tests {
     }
 
     #[test]
+    fn sync_artefacts_are_skipped_but_conflict_copies_are_notes() {
+        let dir = temp_dir();
+        for d in [".stfolder", ".git", ".stversions"] {
+            fs::create_dir(dir.join(d)).unwrap();
+        }
+        fs::write(dir.join("plan.md"), "# Plan\n").unwrap();
+        fs::write(dir.join("plan.sync-conflict-20260922-101010-ABC.md"), "# Other\n").unwrap();
+        fs::write(dir.join(".plan.md.icloud"), "").unwrap();
+        fs::write(dir.join("~syncthing~plan.md.tmp"), "x").unwrap();
+        let store = load(&dir);
+        let mut titles: Vec<&str> = store.notes.iter().map(|n| n.title.as_str()).collect();
+        titles.sort();
+        assert_eq!(titles, ["Other", "Plan"]);
+        assert!(store.folders.is_empty());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
     fn backlinks_all_matches_backlinks() {
         let dir = temp_dir();
         fs::write(dir.join("a.md"), "# A\n\n[[B]] [[b]] [[C]] [[A]]\n").unwrap();
