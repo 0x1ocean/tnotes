@@ -18,7 +18,7 @@
 - Mouse-first: click to select, double-click to pin, right-click context menus, wheel scrolling, drag to select text; a narrow single-panel layout for small terminals.
 - Session restore: open tabs, filter, sort, focus and folded sections come back on the next launch.
 - In-app settings page (`F2` or `,`) that writes the config file for you.
-- Five-colour theme that follows your terminal palette.
+- Colour or monochrome Markdown highlighting; the seven-colour theme follows your terminal palette.
 - Headless CLI (`tnotes ls | search | cat | new | append | write | trash | restore`, `--json`) for scripts and agents; a running TUI picks the changes up live.
 
 ## Install
@@ -167,17 +167,20 @@ keys = "emacs"           # emacs | vim
 autosave_ms = 500        # idle time before a dirty tab is written; 200..=3000
 template = "# "          # initial text of a new note; cursor lands at the end of the first line
 wrap = true
+highlight = "color"      # color (headings/links accent, code, tags) | mono (bold/italic/underline only)
 width = 72               # max text column width in cells, 40..=160; 0 = full editor width
 align = "left"           # left | center
 cursor = "drawn"         # drawn (painted by the editor) | bar | underline | block (terminal cursor)
 blink = false
 
 [theme]                  # colour names (cyan, darkgray, #rrggbb, ...); unset keys keep the defaults
-accent = "cyan"
-dim = "darkgray"
+accent = "cyan"          # headings, links, open checkboxes, selection
+dim = "darkgray"         # markers, quotes, secondary text
 warn = "yellow"
 err = "red"
 ok = "green"
+code = "yellow"          # inline and fenced code (highlight = "color")
+tag = "green"            # #tags (highlight = "color")
 ```
 
 Session state (open tabs, filter, sort, focus) lives in `~/.local/state/tnotes/state.toml`.

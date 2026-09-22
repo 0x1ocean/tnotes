@@ -90,7 +90,16 @@ impl App {
                     &["always", "when 2+ tabs"],
                     (a.tab_numbers == TabNumbers::Multi) as usize,
                 ),
-                info("colors", "edit [theme] in config.toml".into()),
+                choice(
+                    "markdown highlight",
+                    SettingId::Highlight,
+                    &["color", "mono"],
+                    (e.highlight == config::Highlight::Mono) as usize,
+                ),
+                info(
+                    "colors",
+                    "[theme] in config.toml · accent, code, tag, …".into(),
+                ),
             ],
             "editor" => vec![
                 choice(
@@ -114,12 +123,6 @@ impl App {
                     SettingId::Wrap,
                     &["on", "off"],
                     (!e.wrap) as usize,
-                ),
-                choice(
-                    "highlight",
-                    SettingId::Highlight,
-                    &["color", "mono"],
-                    (e.highlight == config::Highlight::Mono) as usize,
                 ),
                 row(
                     "text width",

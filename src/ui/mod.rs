@@ -14,7 +14,7 @@ use crate::config::{self, Dates, EditorKeys, TabNumbers};
 use crate::index::Filter;
 use crate::note::Note;
 
-/// Five-token palette, set once at startup from `config.toml` `[theme]`.
+/// Seven-token palette, set once at startup from `config.toml` `[theme]`.
 pub mod theme {
     use std::sync::OnceLock;
 
