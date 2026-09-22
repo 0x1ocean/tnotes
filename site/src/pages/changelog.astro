@@ -1,18 +1,22 @@
 ---
-import { getCollection, render } from "astro:content";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
 import Base from "@/layouts/Base.astro";
 import { RELEASES, VERSION } from "@/lib/meta";
 
-const [entry] = await getCollection("changelog");
-const { Content } = await render(entry);
+/* The crate's CHANGELOG.md, minus its own `# Changelog` line so the page has
+   one h1. No fenced code in the file, so the default processor suffices. */
+const md = readFileSync(resolve("../CHANGELOG.md"), "utf8").replace(/^# .*\n/, "");
+const { code } = await (await createMarkdownProcessor()).render(md);
 ---
 
 <Base title="Changelog" description={`What changed in each tnotes release, up to v${VERSION}. Rendered from the repository's CHANGELOG.md.`} type="article">
-  <article class="prose max-w-3xl pt-10 [&>h1]:hidden">
-    <h1 class="!block">Changelog</h1>
+  <article class="prose max-w-3xl pt-10">
+    <h1>Changelog</h1>
     <p class="text-muted-foreground -mt-2">
       Rendered from <code>CHANGELOG.md</code> in the repository; each section is also the <a href={RELEASES}>GitHub release</a> note.
     </p>
-    <Content />
+    <Fragment set:html={code} />
   </article>
 </Base>

@@ -22,7 +22,7 @@
   --border: #3b4252;
   --input: #434c5e;
   --ring: #88c0d0;
-  --dim: #4c566a;
+  --dim: #6b778c; /* 3.1:1 on --card; Nord's #4c566a is 1.7:1 and fails WCAG for text */
   --ok: #a3be8c;
   --warn: #ebcb8b;
   --code: #ebcb8b;

@@ -10,9 +10,5 @@ const docs = defineCollection({
   }),
 });
 
-/** The crate's own CHANGELOG.md, rendered as-is: one source of truth. */
-const changelog = defineCollection({
-  loader: glob({ pattern: "CHANGELOG.md", base: ".." }),
-});
+export const collections = { docs };
 
-export const collections = { docs, changelog };
