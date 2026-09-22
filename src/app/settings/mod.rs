@@ -25,6 +25,7 @@ pub enum SettingId {
     Autosave,
     Template,
     Wrap,
+    Highlight,
     TextWidth,
     Align,
     Cursor,

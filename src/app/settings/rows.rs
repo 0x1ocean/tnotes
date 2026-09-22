@@ -115,6 +115,12 @@ impl App {
                     &["on", "off"],
                     (!e.wrap) as usize,
                 ),
+                choice(
+                    "highlight",
+                    SettingId::Highlight,
+                    &["color", "mono"],
+                    (e.highlight == config::Highlight::Mono) as usize,
+                ),
                 row(
                     "text width",
                     SettingId::TextWidth,
@@ -254,6 +260,14 @@ impl App {
                 EditorKeys::Emacs
             }),
             SettingId::Wrap => e.wrap = opt == 0,
+            SettingId::Highlight => {
+                e.highlight = if opt == 1 {
+                    config::Highlight::Mono
+                } else {
+                    config::Highlight::Color
+                };
+                self.rehighlight();
+            }
             SettingId::Cursor => {
                 e.cursor = match opt {
                     1 => config::CursorShape::Bar,

@@ -215,6 +215,14 @@ impl App {
         markdown::refresh(editor, mode);
     }
 
+    /// Re-run the highlighter on every tab after `editor.highlight` changes.
+    pub(super) fn rehighlight(&mut self) {
+        let mode = self.cfg.editor.highlight;
+        for t in &mut self.tabs {
+            markdown::refresh(&mut t.editor, mode);
+        }
+    }
+
     pub(super) fn toggle_preview(&mut self) {
         if self.tab_in_trash(self.active) {
             return;

@@ -483,3 +483,28 @@ fn external_rename_of_a_dirty_tab_keeps_the_edits_as_a_conflict_copy() {
     );
     assert!(app.status.as_ref().unwrap().text.contains("conflict"));
 }
+
+#[test]
+fn highlight_setting_switches_live() {
+    use crate::app::settings::SettingId;
+    use crate::ui::theme::{code, dim};
+    let mut f = fixture(&[("a.md", "# A\n\n`c`\n")]);
+    let app = &mut f.app;
+    open_pinned(app, "a.md");
+    let fg_at = |app: &App, row, col| {
+        let at = Index2::new(row, col);
+        app.tabs[0]
+            .editor
+            .highlights
+            .iter()
+            .find(|h| h.start <= at && at <= h.end)
+            .unwrap_or_else(|| panic!("no highlight at {row}:{col}"))
+            .style
+            .fg
+    };
+    assert_eq!(fg_at(app, 2, 1), Some(code()));
+    app.set_choice(SettingId::Highlight, 1);
+    assert_eq!(fg_at(app, 2, 1), Some(dim()));
+    app.set_choice(SettingId::Highlight, 0);
+    assert_eq!(fg_at(app, 2, 1), Some(code()));
+}
